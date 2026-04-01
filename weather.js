@@ -7,6 +7,15 @@ var OceanWeather = (function () {
     var TWO_PI = 2 * Math.PI;
     var FETCH_INTERVAL = 15 * 60 * 1000; // 15 minutes
 
+    // Simulation parameter bounds (mirrors shared.js)
+    var MIN_WIND_SPEED = 5.0, MAX_WIND_SPEED = 25.0;
+    var MIN_SIZE = 100, MAX_SIZE = 1000;
+    var MIN_CHOPPINESS = 0, MAX_CHOPPINESS = 2.5;
+
+    function clamp(x, min, max) {
+        return Math.min(Math.max(x, min), max);
+    }
+
     // Curated coastal locations
     var LOCATIONS = [
         { name: 'Santa Cruz, CA', lat: 36.96, lng: -122.02 },
@@ -34,7 +43,8 @@ var OceanWeather = (function () {
             '&longitude=' + location.lng +
             '&hourly=wave_height,wave_direction,wave_period,' +
             'wind_wave_height,wind_wave_period,' +
-            'swell_wave_height,swell_wave_period' +
+            'swell_wave_height,swell_wave_period,' +
+            'sea_surface_temperature' +
             '&forecast_days=1&timeformat=unixtime';
 
         var windUrl = 'https://api.open-meteo.com/v1/forecast' +
@@ -125,6 +135,9 @@ var OceanWeather = (function () {
         var windWaveHeight = getInterpolatedValue(weatherData.marine.wind_wave_height, idx, t);
         var swellWaveHeight = getInterpolatedValue(weatherData.marine.swell_wave_height, idx, t);
 
+        var waveDirection = getInterpolatedValue(weatherData.marine.wave_direction, idx, t);
+        var seaSurfaceTemp = getInterpolatedValue(weatherData.marine.sea_surface_temperature, idx, t);
+
         var windSpeedKmh = getInterpolatedValue(weatherData.wind.wind_speed_10m, idx, t);
         var windDirDeg = getInterpolatedValue(weatherData.wind.wind_direction_10m, idx, t);
 
@@ -167,6 +180,8 @@ var OceanWeather = (function () {
             raw: {
                 waveHeight: waveHeight,
                 wavePeriod: wavePeriod,
+                waveDirection: waveDirection,
+                seaSurfaceTemp: seaSurfaceTemp,
                 windSpeedKmh: windSpeedKmh,
                 windSpeedMs: windSpeedMs,
                 windSpeedMph: windSpeedMs * 2.237,
@@ -239,12 +254,25 @@ var OceanWeather = (function () {
         return mapCurrentConditions();
     }
 
+    // Standalone fetch for data page (no callback/timer coupling)
+    function fetchForLocation(location) {
+        return fetchWeatherData(location);
+    }
+
+    function degreesToCompass(deg) {
+        var dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
+                    'S','SSW','SW','WSW','W','WNW','NW','NNW'];
+        return dirs[Math.round(deg / 22.5) % 16];
+    }
+
     return {
         init: init,
         setLocation: setLocation,
         getLocations: getLocations,
         getCurrentLocation: getCurrentLocation,
         getCurrentConditions: getCurrentConditions,
+        fetchForLocation: fetchForLocation,
+        degreesToCompass: degreesToCompass,
         LOCATIONS: LOCATIONS
     };
 })();

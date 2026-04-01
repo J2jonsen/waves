@@ -141,6 +141,31 @@ canvas {
     letter-spacing: 1px;
 }
 
+/* Data page link */
+#data-link {
+    position: fixed;
+    top: 16px;
+    right: 68px;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.2s;
+    text-decoration: none;
+}
+
+#data-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 /* Admin tuning panel */
 #admin-toggle {
     position: fixed;
