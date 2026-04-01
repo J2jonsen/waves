@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#001020">
+    <title>Ocean Waves</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <canvas id="simulator"></canvas>
+    <div id="sky"></div>
+
+    <div id="hud">
+        <div id="hud-location">
+            <span id="location-name">Loading...</span>
+        </div>
+        <div id="hud-stats">
+            <div class="hud-stat">
+                <span class="hud-label">Waves</span>
+                <span class="hud-value" id="wave-height">--</span>
+            </div>
+            <div class="hud-stat">
+                <span class="hud-label">Period</span>
+                <span class="hud-value" id="wave-period">--</span>
+            </div>
+            <div class="hud-stat">
+                <span class="hud-label">Wind</span>
+                <span class="hud-value" id="wind-speed">--</span>
+            </div>
+        </div>
+        <div id="hud-locations">
+            <select id="location-select"></select>
+        </div>
+    </div>
+
+    <div id="loading">
+        <div id="loading-text">Loading ocean...</div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="simulation.js"></script>
+    <script src="weather.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
