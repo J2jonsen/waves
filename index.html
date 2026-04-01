@@ -19,8 +19,9 @@
         </div>
         <div id="hud-stats">
             <div class="hud-stat">
-                <span class="hud-label">Waves</span>
-                <span class="hud-value" id="wave-height">--</span>
+                <span class="hud-label">Sea State</span>
+                <span class="hud-value" id="beaufort-number">--</span>
+                <span class="hud-desc" id="beaufort-desc"></span>
             </div>
             <div class="hud-stat">
                 <span class="hud-label">Period</span>
@@ -33,6 +34,51 @@
         </div>
         <div id="hud-locations">
             <select id="location-select"></select>
+        </div>
+    </div>
+
+    <!-- Admin tuning panel -->
+    <button id="admin-toggle" aria-label="Toggle tuning panel">&#9881;</button>
+    <div id="admin-panel">
+        <div id="admin-header">
+            <span>Tuning Panel</span>
+            <button id="admin-close">&times;</button>
+        </div>
+        <div id="admin-body">
+            <div class="admin-section">
+                <div class="admin-section-title">Wind (Speed + Direction)</div>
+                <label>Speed (m/s) <span id="val-windspeed">10</span></label>
+                <input type="range" id="slider-windspeed" min="0" max="30" step="0.5" value="10">
+                <label>Direction (&deg;) <span id="val-winddir">225</span></label>
+                <input type="range" id="slider-winddir" min="0" max="360" step="1" value="225">
+            </div>
+            <div class="admin-section">
+                <div class="admin-section-title">Direct Components</div>
+                <label>Wind X <span id="val-windx">10</span></label>
+                <input type="range" id="slider-windx" min="-25" max="25" step="0.5" value="10">
+                <label>Wind Y <span id="val-windy">10</span></label>
+                <input type="range" id="slider-windy" min="-25" max="25" step="0.5" value="10">
+            </div>
+            <div class="admin-section">
+                <div class="admin-section-title">Simulation</div>
+                <label>Size <span id="val-size">250</span></label>
+                <input type="range" id="slider-size" min="100" max="1000" step="10" value="250">
+                <label>Choppiness <span id="val-chop">1.5</span></label>
+                <input type="range" id="slider-chop" min="0" max="2.5" step="0.05" value="1.5">
+            </div>
+            <div class="admin-section">
+                <div class="admin-section-title">Presets</div>
+                <div id="admin-presets">
+                    <button class="preset-btn" data-preset="calm">Calm</button>
+                    <button class="preset-btn" data-preset="moderate">Moderate</button>
+                    <button class="preset-btn" data-preset="stormy">Stormy</button>
+                    <button class="preset-btn" data-preset="hurricane">Hurricane</button>
+                </div>
+            </div>
+            <div class="admin-actions">
+                <button id="btn-copy-params">Copy Params</button>
+                <button id="btn-resume-weather">Resume Weather</button>
+            </div>
         </div>
     </div>
 

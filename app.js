@@ -142,9 +142,10 @@
     function updateHUD(data) {
         if (!data || !data.raw) return;
         var r = data.raw;
-        document.getElementById('wave-height').textContent = r.waveHeight.toFixed(1) + 'm';
+        document.getElementById('beaufort-number').textContent = 'BF ' + r.beaufort.number;
+        document.getElementById('beaufort-desc').textContent = r.beaufort.description;
         document.getElementById('wave-period').textContent = r.wavePeriod.toFixed(0) + 's';
-        document.getElementById('wind-speed').textContent = r.windSpeedMs.toFixed(0) + ' m/s';
+        document.getElementById('wind-speed').textContent = Math.round(r.windSpeedMph) + ' mph';
 
         if (!hudVisible) {
             document.getElementById('hud').classList.add('visible');
@@ -152,8 +153,11 @@
         }
     }
 
+    var pauseWeather = false;
+
     function applyWeatherData(data) {
         if (!data) return;
+        if (pauseWeather) return;
         target.windX = data.windX;
         target.windY = data.windY;
         target.size = data.size;
@@ -217,6 +221,148 @@
     }
 
     requestAnimationFrame(render);
+
+    // --- Admin tuning panel ---
+    var adminPanel = document.getElementById('admin-panel');
+
+    document.getElementById('admin-toggle').addEventListener('click', function () {
+        adminPanel.classList.toggle('open');
+        if (adminPanel.classList.contains('open')) syncSlidersToCurrentValues();
+    });
+    document.getElementById('admin-close').addEventListener('click', function () {
+        adminPanel.classList.remove('open');
+    });
+
+    function syncSlidersToCurrentValues() {
+        var speed = Math.sqrt(current.windX * current.windX + current.windY * current.windY);
+        var dir = (Math.atan2(current.windX, current.windY) * 180 / Math.PI + 360) % 360;
+        setSlider('slider-windspeed', speed);
+        setSlider('slider-winddir', Math.round(dir));
+        setSlider('slider-windx', current.windX);
+        setSlider('slider-windy', current.windY);
+        setSlider('slider-size', current.size);
+        setSlider('slider-chop', current.choppiness);
+    }
+
+    function setSlider(id, value) {
+        var el = document.getElementById(id);
+        el.value = value;
+        var valId = 'val-' + id.replace('slider-', '');
+        document.getElementById(valId).textContent = parseFloat(value).toFixed(
+            id === 'slider-winddir' ? 0 : id === 'slider-size' ? 0 : id === 'slider-windspeed' ? 1 : 1
+        );
+    }
+
+    function applyFromSpeedDir() {
+        var speed = parseFloat(document.getElementById('slider-windspeed').value);
+        var dir = parseFloat(document.getElementById('slider-winddir').value) * Math.PI / 180;
+        var wx = speed * Math.sin(dir);
+        var wy = speed * Math.cos(dir);
+        setSlider('slider-windx', wx);
+        setSlider('slider-windy', wy);
+        applyManualParams(wx, wy);
+    }
+
+    function applyFromComponents() {
+        var wx = parseFloat(document.getElementById('slider-windx').value);
+        var wy = parseFloat(document.getElementById('slider-windy').value);
+        var speed = Math.sqrt(wx * wx + wy * wy);
+        var dir = (Math.atan2(wx, wy) * 180 / Math.PI + 360) % 360;
+        setSlider('slider-windspeed', speed);
+        setSlider('slider-winddir', Math.round(dir));
+        applyManualParams(wx, wy);
+    }
+
+    function applyManualParams(wx, wy) {
+        pauseWeather = true;
+        var size = parseFloat(document.getElementById('slider-size').value);
+        var chop = parseFloat(document.getElementById('slider-chop').value);
+        target.windX = wx;
+        target.windY = wy;
+        target.size = size;
+        target.choppiness = chop;
+    }
+
+    // Slider event listeners
+    ['slider-windspeed', 'slider-winddir'].forEach(function (id) {
+        document.getElementById(id).addEventListener('input', function () {
+            document.getElementById('val-' + id.replace('slider-', '')).textContent =
+                parseFloat(this.value).toFixed(id === 'slider-winddir' ? 0 : 1);
+            applyFromSpeedDir();
+        });
+    });
+
+    ['slider-windx', 'slider-windy'].forEach(function (id) {
+        document.getElementById(id).addEventListener('input', function () {
+            document.getElementById('val-' + id.replace('slider-', '')).textContent =
+                parseFloat(this.value).toFixed(1);
+            applyFromComponents();
+        });
+    });
+
+    document.getElementById('slider-size').addEventListener('input', function () {
+        document.getElementById('val-size').textContent = parseFloat(this.value).toFixed(0);
+        pauseWeather = true;
+        target.size = parseFloat(this.value);
+    });
+
+    document.getElementById('slider-chop').addEventListener('input', function () {
+        document.getElementById('val-chop').textContent = parseFloat(this.value).toFixed(2);
+        pauseWeather = true;
+        target.choppiness = parseFloat(this.value);
+    });
+
+    // Presets
+    var PRESETS = {
+        calm: { windX: 2, windY: 2, size: 150, choppiness: 0.3 },
+        moderate: { windX: 8, windY: 8, size: 300, choppiness: 1.2 },
+        stormy: { windX: 16, windY: 16, size: 600, choppiness: 2.0 },
+        hurricane: { windX: 20, windY: 18, size: 900, choppiness: 2.5 }
+    };
+
+    document.querySelectorAll('.preset-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var p = PRESETS[this.dataset.preset];
+            if (!p) return;
+            pauseWeather = true;
+            target.windX = p.windX;
+            target.windY = p.windY;
+            target.size = p.size;
+            target.choppiness = p.choppiness;
+            syncSlidersToCurrentValues();
+            // Update sliders to target values immediately
+            setSlider('slider-windx', p.windX);
+            setSlider('slider-windy', p.windY);
+            setSlider('slider-size', p.size);
+            setSlider('slider-chop', p.choppiness);
+            var speed = Math.sqrt(p.windX * p.windX + p.windY * p.windY);
+            var dir = (Math.atan2(p.windX, p.windY) * 180 / Math.PI + 360) % 360;
+            setSlider('slider-windspeed', speed);
+            setSlider('slider-winddir', Math.round(dir));
+        });
+    });
+
+    // Copy Params
+    document.getElementById('btn-copy-params').addEventListener('click', function () {
+        var params = {
+            windX: +current.windX.toFixed(2),
+            windY: +current.windY.toFixed(2),
+            size: +current.size.toFixed(1),
+            choppiness: +current.choppiness.toFixed(3)
+        };
+        navigator.clipboard.writeText(JSON.stringify(params, null, 2)).then(function () {
+            var btn = document.getElementById('btn-copy-params');
+            btn.textContent = 'Copied!';
+            setTimeout(function () { btn.textContent = 'Copy Params'; }, 1500);
+        });
+    });
+
+    // Resume Weather
+    document.getElementById('btn-resume-weather').addEventListener('click', function () {
+        pauseWeather = false;
+        var conditions = OceanWeather.getCurrentConditions();
+        if (conditions) applyWeatherData(conditions);
+    });
 
     // --- Dev console API ---
     window.waves = {

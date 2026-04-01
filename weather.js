@@ -169,9 +169,38 @@ var OceanWeather = (function () {
                 wavePeriod: wavePeriod,
                 windSpeedKmh: windSpeedKmh,
                 windSpeedMs: windSpeedMs,
-                windDirDeg: windDirDeg
+                windSpeedMph: windSpeedMs * 2.237,
+                windDirDeg: windDirDeg,
+                beaufort: getBeaufortScale(windSpeedMs)
             }
         };
+    }
+
+    // --- Beaufort Scale ---
+
+    var BEAUFORT_SCALE = [
+        { max: 0.5, number: 0, description: 'Calm' },
+        { max: 1.5, number: 1, description: 'Light Air' },
+        { max: 3.3, number: 2, description: 'Light Breeze' },
+        { max: 5.5, number: 3, description: 'Gentle Breeze' },
+        { max: 7.9, number: 4, description: 'Moderate Breeze' },
+        { max: 10.7, number: 5, description: 'Fresh Breeze' },
+        { max: 13.8, number: 6, description: 'Strong Breeze' },
+        { max: 17.1, number: 7, description: 'Near Gale' },
+        { max: 20.7, number: 8, description: 'Gale' },
+        { max: 24.4, number: 9, description: 'Strong Gale' },
+        { max: 28.4, number: 10, description: 'Storm' },
+        { max: 32.6, number: 11, description: 'Violent Storm' },
+        { max: Infinity, number: 12, description: 'Hurricane' }
+    ];
+
+    function getBeaufortScale(windSpeedMs) {
+        for (var i = 0; i < BEAUFORT_SCALE.length; i++) {
+            if (windSpeedMs < BEAUFORT_SCALE[i].max) {
+                return BEAUFORT_SCALE[i];
+            }
+        }
+        return BEAUFORT_SCALE[BEAUFORT_SCALE.length - 1];
     }
 
     function mapRange(value, inMin, inMax, outMin, outMax) {
