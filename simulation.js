@@ -18,6 +18,15 @@ var Camera = function () {
         changed = true;
     };
 
+    this.setElevation = function (value) {
+        elevation = clamp(value, MIN_ELEVATION, MAX_ELEVATION);
+        changed = true;
+    };
+
+    this.getElevation = function () {
+        return elevation;
+    };
+
     this.getPosition = function () {
         return position;
     };

@@ -344,15 +344,18 @@
         setSlider('slider-windy', current.windY);
         setSlider('slider-size', current.size);
         setSlider('slider-chop', current.choppiness);
+        setSlider('slider-elevation', camera.getElevation());
     }
 
     function setSlider(id, value) {
         var el = document.getElementById(id);
         el.value = value;
         var valId = 'val-' + id.replace('slider-', '');
-        document.getElementById(valId).textContent = parseFloat(value).toFixed(
-            id === 'slider-winddir' ? 0 : id === 'slider-size' ? 0 : id === 'slider-windspeed' ? 1 : 1
-        );
+        var decimals = id === 'slider-winddir' ? 0
+            : id === 'slider-size' ? 0
+            : id === 'slider-elevation' ? 2
+            : 1;
+        document.getElementById(valId).textContent = parseFloat(value).toFixed(decimals);
     }
 
     function applyFromSpeedDir() {
@@ -411,6 +414,12 @@
         document.getElementById('val-chop').textContent = parseFloat(this.value).toFixed(2);
         pauseWeather = true;
         target.choppiness = parseFloat(this.value);
+    });
+
+    document.getElementById('slider-elevation').addEventListener('input', function () {
+        var val = parseFloat(this.value);
+        document.getElementById('val-elevation').textContent = val.toFixed(2);
+        camera.setElevation(val);
     });
 
     var PRESETS = {
