@@ -101,11 +101,11 @@ var NONE = 0,
 
 var CAMERA_DISTANCE = 1400,
     ORBIT_POINT = [0.0, 0.0, 0.0],
-    INITIAL_AZIMUTH = 0.15,
-    INITIAL_ELEVATION = 0.35,
+    INITIAL_AZIMUTH = 0.0,
+    INITIAL_ELEVATION = 0.28,
     MIN_AZIMUTH = -0.5,
     MAX_AZIMUTH = 0.5,
-    MIN_ELEVATION = 0.25,
+    MIN_ELEVATION = 0.2,
     MAX_ELEVATION = 0.8;
 
 var addToVector = function (out, a, b) {

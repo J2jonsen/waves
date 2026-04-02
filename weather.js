@@ -265,12 +265,28 @@ var OceanWeather = (function () {
         return dirs[Math.round(deg / 22.5) % 16];
     }
 
+    // Return hourly forecast arrays for spark charts
+    function getHourlyData() {
+        if (!weatherData) return null;
+        var idx = getCurrentHourIndex();
+        return {
+            currentIndex: idx,
+            windSpeed: (weatherData.wind.wind_speed_10m || []).map(function (v) { return (v || 0) / 3.6 * 2.237; }), // mph
+            waveHeight: (weatherData.marine.wave_height || []).map(function (v) { return (v || 0) * 3.281; }), // ft
+            wavePeriod: weatherData.marine.wave_period || [],
+            seaSurfaceTemp: (weatherData.marine.sea_surface_temperature || []).map(function (v) { return (v || 0) * 9 / 5 + 32; }), // °F
+            waveDirection: weatherData.marine.wave_direction || [],
+            windDirection: weatherData.wind.wind_direction_10m || []
+        };
+    }
+
     return {
         init: init,
         setLocation: setLocation,
         getLocations: getLocations,
         getCurrentLocation: getCurrentLocation,
         getCurrentConditions: getCurrentConditions,
+        getHourlyData: getHourlyData,
         fetchForLocation: fetchForLocation,
         degreesToCompass: degreesToCompass,
         LOCATIONS: LOCATIONS

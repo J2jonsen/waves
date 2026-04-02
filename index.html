@@ -10,39 +10,108 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Fixed ocean background -->
     <canvas id="simulator"></canvas>
     <div id="sky"></div>
 
-    <div id="hud">
-        <div id="hud-location">
-            <span id="location-name">Loading...</span>
-        </div>
-        <div id="hud-stats">
-            <div class="hud-stat">
-                <span class="hud-label">Sea State</span>
-                <span class="hud-value" id="beaufort-number">--</span>
-                <span class="hud-desc" id="beaufort-desc"></span>
+    <!-- Scrollable content -->
+    <div id="scroll-wrap">
+
+        <!-- Hero: 100vh transparent spacer over the animation -->
+        <section id="hero">
+            <div id="hero-top">
+                <div id="hero-location">
+                    <div id="location-row">
+                        <h1 id="location-name">Loading...</h1>
+                        <button id="location-next" aria-label="Next location">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                    </div>
+                    <span id="location-coords"></span>
+                </div>
+                <div id="hero-actions">
+                    <button id="admin-toggle" aria-label="Toggle tuning panel">&#9881;</button>
+                </div>
             </div>
-            <div class="hud-stat">
-                <span class="hud-label">Period</span>
-                <span class="hud-value" id="wave-period">--</span>
+
+            <div id="hero-bottom">
+                <div id="sea-state-label" class="hero-sea-state">--</div>
+                <div id="hud-stats">
+                    <div class="hud-stat">
+                        <span class="hud-label">Wind</span>
+                        <span class="hud-value" id="wind-speed">--</span>
+                    </div>
+                    <div class="hud-stat">
+                        <span class="hud-label">SST</span>
+                        <span class="hud-value" id="sst-value">--</span>
+                    </div>
+                    <div class="hud-stat">
+                        <span class="hud-label">Height</span>
+                        <span class="hud-value" id="wave-height">--</span>
+                    </div>
+                    <div class="hud-stat">
+                        <span class="hud-label">Period</span>
+                        <span class="hud-value" id="wave-period">--</span>
+                    </div>
+                </div>
             </div>
-            <div class="hud-stat">
-                <span class="hud-label">Wind</span>
-                <span class="hud-value" id="wind-speed">--</span>
+        </section>
+
+        <!-- Cards section -->
+        <div id="cards-bg">
+        <section id="cards-section">
+            <div class="data-card" id="card-wind" style="--delay: 0">
+                <div class="card-pill pill-wind">
+                    <span class="pill-value" id="card-wind-val">--</span>
+                    <span class="pill-unit">MPH</span>
+                </div>
+                <div class="card-info">
+                    <div class="card-info-label">WIND</div>
+                    <div class="card-info-detail" id="card-wind-dir">--</div>
+                    <svg class="spark" id="spark-wind" viewBox="0 0 120 32" preserveAspectRatio="none"></svg>
+                </div>
             </div>
-        </div>
-        <div id="hud-locations">
-            <select id="location-select"></select>
+
+            <div class="data-card" id="card-height" style="--delay: 1">
+                <div class="card-pill pill-height">
+                    <span class="pill-value" id="card-height-val">--</span>
+                    <span class="pill-unit">FT</span>
+                </div>
+                <div class="card-info">
+                    <div class="card-info-label" id="card-height-dir">WAVE HEIGHT</div>
+                    <div class="card-info-detail" id="card-height-detail">--</div>
+                    <svg class="spark" id="spark-height" viewBox="0 0 120 32" preserveAspectRatio="none"></svg>
+                </div>
+            </div>
+
+            <div class="data-card" id="card-period" style="--delay: 2">
+                <div class="card-pill pill-period">
+                    <span class="pill-value" id="card-period-val">--</span>
+                    <span class="pill-unit">S</span>
+                </div>
+                <div class="card-info">
+                    <div class="card-info-label">WAVE PERIOD</div>
+                    <div class="card-info-detail" id="card-period-detail">--</div>
+                    <svg class="spark" id="spark-period" viewBox="0 0 120 32" preserveAspectRatio="none"></svg>
+                </div>
+            </div>
+
+            <div class="data-card" id="card-sst" style="--delay: 3">
+                <div class="card-pill pill-sst">
+                    <span class="pill-value" id="card-sst-val">--</span>
+                    <span class="pill-unit">&deg;F</span>
+                </div>
+                <div class="card-info">
+                    <div class="card-info-label">SEA SURFACE TEMP</div>
+                    <div class="card-info-detail" id="card-sst-detail">--</div>
+                    <svg class="spark" id="spark-sst" viewBox="0 0 120 32" preserveAspectRatio="none"></svg>
+                </div>
+            </div>
+        </section>
         </div>
     </div>
 
-    <a href="data.html" id="data-link" aria-label="Weather data">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    </a>
-
     <!-- Admin tuning panel -->
-    <button id="admin-toggle" aria-label="Toggle tuning panel">&#9881;</button>
     <div id="admin-panel">
         <div id="admin-header">
             <span>Tuning Panel</span>

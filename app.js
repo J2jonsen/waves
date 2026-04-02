@@ -72,7 +72,7 @@
     });
 
     // --- Smooth parameter interpolation ---
-    var LERP_SPEED = 1.5; // per second — full convergence in ~2-3s
+    var LERP_SPEED = 1.5;
     var current = {
         windX: INITIAL_WIND[0],
         windY: INITIAL_WIND[1],
@@ -88,7 +88,6 @@
 
     function lerpParams(dt) {
         var t = 1 - Math.exp(-LERP_SPEED * dt);
-        var changed = false;
 
         var newWindX = current.windX + (target.windX - current.windX) * t;
         var newWindY = current.windY + (target.windY - current.windY) * t;
@@ -96,14 +95,12 @@
             current.windX = newWindX;
             current.windY = newWindY;
             simulator.setWind(current.windX, current.windY);
-            changed = true;
         }
 
         var newSize = current.size + (target.size - current.size) * t;
         if (Math.abs(newSize - current.size) > 0.1) {
             current.size = newSize;
             simulator.setSize(current.size);
-            changed = true;
         }
 
         var newChop = current.choppiness + (target.choppiness - current.choppiness) * t;
@@ -125,35 +122,147 @@
             for (var i = 0; i < frameTimes.length; i++) avg += frameTimes[i];
             avg /= frameTimes.length;
             if (avg > 0.020 && renderScale > 1.0) {
-                // Drop to DPR 1.0 for better perf
                 renderScale = 1.0;
                 resizeCanvas();
                 simulator.resize(canvas.width, canvas.height);
                 updateProjection();
-                console.log('Reduced render scale for performance');
             }
             perfCheckDone = true;
         }
     }
 
     // --- Weather integration ---
-    var hudVisible = false;
+    var pauseWeather = false;
 
     function updateHUD(data) {
         if (!data || !data.raw) return;
         var r = data.raw;
-        document.getElementById('beaufort-number').textContent = 'BF ' + r.beaufort.number;
-        document.getElementById('beaufort-desc').textContent = r.beaufort.description;
-        document.getElementById('wave-period').textContent = r.wavePeriod.toFixed(0) + 's';
-        document.getElementById('wind-speed').textContent = Math.round(r.windSpeedMph) + ' mph';
 
-        if (!hudVisible) {
-            document.getElementById('hud').classList.add('visible');
-            hudVisible = true;
-        }
+        // Sea state label
+        document.getElementById('sea-state-label').textContent = r.beaufort.description;
+
+        // Compact stats in imperial
+        document.getElementById('wind-speed').textContent = Math.round(r.windSpeedMph) + ' mph';
+        document.getElementById('sst-value').textContent = Math.round(r.seaSurfaceTemp * 9 / 5 + 32) + '\u00B0';
+        document.getElementById('wave-height').textContent = (r.waveHeight * 3.281).toFixed(1) + ' ft';
+        document.getElementById('wave-period').textContent = r.wavePeriod.toFixed(0) + ' s';
+
+        // Update cards
+        updateCards(r);
+
+        // Update spark charts
+        var hourly = OceanWeather.getHourlyData();
+        if (hourly) updateSparks(hourly);
     }
 
-    var pauseWeather = false;
+    function updateCards(r) {
+        // Wind card
+        document.getElementById('card-wind-val').textContent = Math.round(r.windSpeedMph);
+        document.getElementById('card-wind-dir').textContent = OceanWeather.degreesToCompass(r.windDirDeg);
+
+        // Wave height card
+        document.getElementById('card-height-val').textContent = (r.waveHeight * 3.281).toFixed(1);
+        document.getElementById('card-height-detail').textContent =
+            OceanWeather.degreesToCompass(r.waveDirection) + ' Swell';
+
+        // Wave period card
+        document.getElementById('card-period-val').textContent = r.wavePeriod.toFixed(0);
+        document.getElementById('card-period-detail').textContent = getPeriodLabel(r.wavePeriod);
+
+        // SST card
+        var tempF = r.seaSurfaceTemp * 9 / 5 + 32;
+        document.getElementById('card-sst-val').textContent = Math.round(tempF);
+        document.getElementById('card-sst-detail').textContent = getTempLabel(r.seaSurfaceTemp);
+    }
+
+    function getPeriodLabel(period) {
+        if (period < 6) return 'Short Period';
+        if (period < 10) return 'Medium Period';
+        if (period < 14) return 'Long Period';
+        return 'Very Long Period';
+    }
+
+    function getTempLabel(tempC) {
+        if (tempC < 10) return 'Cold';
+        if (tempC < 16) return 'Cool';
+        if (tempC < 22) return 'Mild';
+        if (tempC < 28) return 'Warm';
+        return 'Hot';
+    }
+
+    // --- Spark chart rendering ---
+    function updateSparks(hourly) {
+        renderSpark('spark-wind', hourly.windSpeed, hourly.currentIndex);
+        renderSpark('spark-height', hourly.waveHeight, hourly.currentIndex);
+        renderSpark('spark-period', hourly.wavePeriod, hourly.currentIndex);
+        renderSpark('spark-sst', hourly.seaSurfaceTemp, hourly.currentIndex);
+    }
+
+    function renderSpark(svgId, data, currentIdx) {
+        var svg = document.getElementById(svgId);
+        if (!svg || !data || data.length === 0) return;
+
+        // Clear previous content
+        svg.innerHTML = '';
+
+        var w = 120, h = 32, pad = 3;
+        var n = data.length;
+        if (n < 2) return;
+
+        // Find min/max for scaling
+        var min = Infinity, max = -Infinity;
+        for (var i = 0; i < n; i++) {
+            var v = data[i];
+            if (v == null || isNaN(v)) continue;
+            if (v < min) min = v;
+            if (v > max) max = v;
+        }
+        var range = max - min || 1;
+
+        // Build points
+        var points = [];
+        for (var i = 0; i < n; i++) {
+            var v = data[i];
+            if (v == null || isNaN(v)) v = min;
+            var x = (i / (n - 1)) * w;
+            var y = pad + (1 - (v - min) / range) * (h - pad * 2);
+            points.push(x.toFixed(1) + ',' + y.toFixed(1));
+        }
+
+        var polylineStr = points.join(' ');
+
+        // Area fill (closed path from line to bottom)
+        var areaPath = 'M' + points[0];
+        for (var i = 1; i < points.length; i++) {
+            areaPath += ' L' + points[i];
+        }
+        areaPath += ' L' + w + ',' + h + ' L0,' + h + ' Z';
+
+        var area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        area.setAttribute('d', areaPath);
+        area.setAttribute('class', 'spark-area');
+        svg.appendChild(area);
+
+        // Line
+        var line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        line.setAttribute('points', polylineStr);
+        line.setAttribute('class', 'spark-line');
+        svg.appendChild(line);
+
+        // Current-hour dot
+        if (currentIdx >= 0 && currentIdx < n) {
+            var cx = (currentIdx / (n - 1)) * w;
+            var v = data[currentIdx];
+            if (v == null || isNaN(v)) v = min;
+            var cy = pad + (1 - (v - min) / range) * (h - pad * 2);
+
+            var dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            dot.setAttribute('cx', cx.toFixed(1));
+            dot.setAttribute('cy', cy.toFixed(1));
+            dot.setAttribute('class', 'spark-dot');
+            svg.appendChild(dot);
+        }
+    }
 
     function applyWeatherData(data) {
         if (!data) return;
@@ -168,23 +277,23 @@
     OceanWeather.init(applyWeatherData);
 
     // --- Location picker ---
-    var selectEl = document.getElementById('location-select');
     var locations = OceanWeather.getLocations();
-    for (var i = 0; i < locations.length; i++) {
-        var opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = locations[i].name;
-        selectEl.appendChild(opt);
-    }
-    selectEl.addEventListener('change', function () {
-        var loc = locations[parseInt(selectEl.value)];
+    var currentLocationIndex = 0;
+
+    function setLocation(idx) {
+        currentLocationIndex = idx;
+        var loc = locations[idx];
         document.getElementById('location-name').textContent = loc.name;
+        document.getElementById('location-coords').textContent =
+            'LAT ' + loc.lat.toFixed(3) + '  LON ' + Math.abs(loc.lng).toFixed(3);
         OceanWeather.setLocation(loc);
+    }
+
+    document.getElementById('location-next').addEventListener('click', function () {
+        setLocation((currentLocationIndex + 1) % locations.length);
     });
 
-    // Start with first location
-    document.getElementById('location-name').textContent = locations[0].name;
-    OceanWeather.setLocation(locations[0]);
+    setLocation(0);
 
     // --- Render loop ---
     var lastTime = 0;
@@ -197,19 +306,12 @@
         var dt = lastTime ? timeSeconds - lastTime : 1 / 60;
         lastTime = timeSeconds;
 
-        // Cap delta to avoid huge jumps on tab refocus
         dt = Math.min(dt, 1 / 15);
 
-        // Smooth parameter transitions
         lerpParams(dt);
-
-        // Performance check
         checkPerformance(dt);
-
-        // Render ocean
         simulator.render(dt, projectionMatrix, camera.getViewMatrix(), camera.getPosition());
 
-        // Hide loading screen after first frame
         if (!started) {
             started = true;
             var loadingEl = document.getElementById('loading');
@@ -283,7 +385,6 @@
         target.choppiness = chop;
     }
 
-    // Slider event listeners
     ['slider-windspeed', 'slider-winddir'].forEach(function (id) {
         document.getElementById(id).addEventListener('input', function () {
             document.getElementById('val-' + id.replace('slider-', '')).textContent =
@@ -312,7 +413,6 @@
         target.choppiness = parseFloat(this.value);
     });
 
-    // Presets
     var PRESETS = {
         calm: { windX: 2, windY: 2, size: 150, choppiness: 0.3 },
         moderate: { windX: 8, windY: 8, size: 300, choppiness: 1.2 },
@@ -330,7 +430,6 @@
             target.size = p.size;
             target.choppiness = p.choppiness;
             syncSlidersToCurrentValues();
-            // Update sliders to target values immediately
             setSlider('slider-windx', p.windX);
             setSlider('slider-windy', p.windY);
             setSlider('slider-size', p.size);
@@ -342,7 +441,6 @@
         });
     });
 
-    // Copy Params
     document.getElementById('btn-copy-params').addEventListener('click', function () {
         var params = {
             windX: +current.windX.toFixed(2),
@@ -357,7 +455,6 @@
         });
     });
 
-    // Resume Weather
     document.getElementById('btn-resume-weather').addEventListener('click', function () {
         pauseWeather = false;
         var conditions = OceanWeather.getCurrentConditions();
@@ -366,16 +463,9 @@
 
     // --- Dev console API ---
     window.waves = {
-        setWind: function (x, y) {
-            target.windX = x;
-            target.windY = y;
-        },
-        setSize: function (s) {
-            target.size = s;
-        },
-        setChoppiness: function (c) {
-            target.choppiness = c;
-        },
+        setWind: function (x, y) { target.windX = x; target.windY = y; },
+        setSize: function (s) { target.size = s; },
+        setChoppiness: function (c) { target.choppiness = c; },
         setImmediate: function (windX, windY, size, choppiness) {
             current.windX = target.windX = windX;
             current.windY = target.windY = windY;

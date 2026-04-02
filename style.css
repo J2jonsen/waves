@@ -6,69 +6,144 @@
 
 html, body {
     width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000a14;
+    background: #081428;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: white;
+    -webkit-font-smoothing: antialiased;
 }
 
+/* Fixed ocean canvas */
 canvas {
-    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 100%;
+    height: 100vh;
+    display: block;
     touch-action: none;
+    z-index: 0;
 }
 
-/* Sky gradient overlay above the ocean horizon */
+/* Sky gradient overlay */
 #sky {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 45%;
+    height: 35%;
     background: linear-gradient(
         to bottom,
         rgba(8, 20, 40, 1.0) 0%,
-        rgba(12, 35, 60, 0.95) 30%,
-        rgba(20, 55, 85, 0.7) 60%,
-        rgba(30, 75, 110, 0.3) 80%,
+        rgba(12, 35, 60, 0.95) 25%,
+        rgba(20, 55, 85, 0.6) 55%,
+        rgba(30, 75, 110, 0.2) 80%,
         transparent 100%
     );
     pointer-events: none;
     z-index: 1;
 }
 
-/* HUD overlay */
-#hud {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+/* Scrollable wrapper */
+#scroll-wrap {
+    position: relative;
+    z-index: 2;
+    overflow-x: hidden;
+}
+
+/* ==================== HERO SECTION ==================== */
+#hero {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     padding: 16px 20px;
     padding-bottom: max(16px, env(safe-area-inset-bottom));
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.5));
+}
+
+#hero-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+#location-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#hero-location h1 {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+#location-next {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     color: white;
-    pointer-events: none;
-    z-index: 10;
-    opacity: 0;
-    transition: opacity 0.5s ease;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    padding: 0;
 }
 
-#hud.visible {
-    opacity: 1;
+#location-next:hover {
+    background: rgba(255, 255, 255, 0.22);
 }
 
-#hud-location {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 8px;
+#location-coords {
+    font-size: 14px;
+    opacity: 0.4;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+#hero-actions {
+    display: flex;
+    gap: 10px;
+}
+
+#admin-toggle {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.2s;
+}
+
+#admin-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Hero bottom HUD */
+#hero-bottom {
+    pointer-events: none;
+}
+
+.hero-sea-state {
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -1px;
 }
 
 #hud-stats {
     display: flex;
-    gap: 24px;
-    margin-bottom: 12px;
+    gap: 28px;
+    margin-bottom: 14px;
 }
 
 .hud-stat {
@@ -78,47 +153,182 @@ canvas {
 }
 
 .hud-label {
-    font-size: 11px;
+    font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    opacity: 0.6;
+    opacity: 0.5;
 }
 
 .hud-value {
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 26px;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
 }
 
-.hud-desc {
-    font-size: 11px;
+
+/* ==================== CARDS SECTION ==================== */
+#cards-bg {
+    background: linear-gradient(
+        to bottom,
+        rgba(10, 25, 45, 0) 0%,
+        rgba(10, 25, 45, 0.85) 60px,
+        #081428 140px
+    );
+    padding-top: 40px;
+}
+
+#cards-section {
+    position: relative;
+    padding: 24px 16px 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+
+/* Data card — horizontal layout matching design */
+.data-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 16px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    overflow: hidden;
+
+    opacity: 0;
+    transform: translateY(20px);
+    animation: cardIn 0.5s ease forwards;
+    animation-delay: calc(var(--delay, 0) * 0.08s + 0.15s);
+}
+
+.data-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+@keyframes cardIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Colored pill with large number */
+.card-pill {
+    flex-shrink: 0;
+    width: 120px;
+    height: 90px;
+    border-radius: 14px;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 12px;
+}
+
+.pill-value {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+}
+
+.pill-unit {
+    font-size: 16px;
+    font-weight: 600;
     opacity: 0.7;
+    align-self: center;
 }
 
-#hud-locations {
-    pointer-events: auto;
+/* Pill color themes */
+.pill-wind {
+    background: #d4a843;
+    color: #1a1400;
 }
 
-#location-select {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 14px;
-    font-family: inherit;
+.pill-height {
+    background: #8ca0b8;
+    color: #0a1520;
+}
+
+.pill-period {
+    background: #b8c8b0;
+    color: #0f1a0a;
+}
+
+.pill-sst {
+    background: #7eb8c8;
+    color: #0a1520;
+}
+
+/* Card info (right side) */
+.card-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.card-info-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.45;
+    font-weight: 600;
+}
+
+.card-info-detail {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+/* Spark chart */
+.spark {
     width: 100%;
-    appearance: none;
-    -webkit-appearance: none;
-    cursor: pointer;
-    outline: none;
+    height: 32px;
+    margin-top: 6px;
 }
 
-#location-select:focus {
-    border-color: rgba(255, 255, 255, 0.4);
+.spark-line {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-/* Loading screen */
+.spark-area {
+    opacity: 0.15;
+}
+
+.spark-dot {
+    r: 3;
+}
+
+/* Spark colors per card */
+#spark-wind .spark-line { stroke: #d4a843; }
+#spark-wind .spark-area { fill: #d4a843; }
+#spark-wind .spark-dot { fill: #d4a843; }
+
+#spark-height .spark-line { stroke: #8ca0b8; }
+#spark-height .spark-area { fill: #8ca0b8; }
+#spark-height .spark-dot { fill: #8ca0b8; }
+
+#spark-period .spark-line { stroke: #b8c8b0; }
+#spark-period .spark-area { fill: #b8c8b0; }
+#spark-period .spark-dot { fill: #b8c8b0; }
+
+#spark-sst .spark-line { stroke: #7eb8c8; }
+#spark-sst .spark-area { fill: #7eb8c8; }
+#spark-sst .spark-dot { fill: #7eb8c8; }
+
+/* ==================== LOADING ==================== */
 #loading {
     position: fixed;
     inset: 0;
@@ -141,54 +351,7 @@ canvas {
     letter-spacing: 1px;
 }
 
-/* Data page link */
-#data-link {
-    position: fixed;
-    top: 16px;
-    right: 68px;
-    z-index: 20;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: background 0.2s;
-    text-decoration: none;
-}
-
-#data-link:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-/* Admin tuning panel */
-#admin-toggle {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 20;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    font-size: 22px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: background 0.2s;
-}
-
-#admin-toggle:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
+/* ==================== ADMIN PANEL ==================== */
 #admin-panel {
     position: fixed;
     top: 0;
@@ -329,4 +492,22 @@ canvas {
 
 .admin-actions button:hover {
     background: rgba(74, 158, 255, 0.3);
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (min-width: 768px) {
+    #cards-section {
+        max-width: 640px;
+        padding: 32px 24px 80px;
+        gap: 16px;
+    }
+
+    .card-pill {
+        width: 140px;
+        height: 100px;
+    }
+
+    .pill-value {
+        font-size: 48px;
+    }
 }
