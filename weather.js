@@ -50,7 +50,7 @@ var OceanWeather = (function () {
         var windUrl = 'https://api.open-meteo.com/v1/forecast' +
             '?latitude=' + location.lat +
             '&longitude=' + location.lng +
-            '&hourly=wind_speed_10m,wind_direction_10m' +
+            '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m' +
             '&forecast_days=1&timeformat=unixtime';
 
         return Promise.all([
@@ -139,6 +139,7 @@ var OceanWeather = (function () {
         var seaSurfaceTemp = getInterpolatedValue(weatherData.marine.sea_surface_temperature, idx, t);
 
         var windSpeedKmh = getInterpolatedValue(weatherData.wind.wind_speed_10m, idx, t);
+        var windGustKmh = getInterpolatedValue(weatherData.wind.wind_gusts_10m, idx, t);
         var windDirDeg = getInterpolatedValue(weatherData.wind.wind_direction_10m, idx, t);
 
         // --- Wind mapping ---
@@ -185,6 +186,8 @@ var OceanWeather = (function () {
                 windSpeedKmh: windSpeedKmh,
                 windSpeedMs: windSpeedMs,
                 windSpeedMph: windSpeedMs * 2.237,
+                windGustKmh: windGustKmh,
+                windGustMph: (windGustKmh / 3.6) * 2.237,
                 windDirDeg: windDirDeg,
                 beaufort: getBeaufortScale(windSpeedMs)
             }

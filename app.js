@@ -141,18 +141,18 @@
         // Sea state label
         document.getElementById('sea-state-label').textContent = r.beaufort.description;
 
-        // Compact stats in imperial
-        document.getElementById('wind-speed').textContent = Math.round(r.windSpeedMph) + ' mph';
-        document.getElementById('sst-value').textContent = Math.round(r.seaSurfaceTemp * 9 / 5 + 32) + '\u00B0';
+        // HUD stats
         document.getElementById('wave-height').textContent = (r.waveHeight * 3.281).toFixed(1) + ' ft';
-        document.getElementById('wave-period').textContent = r.wavePeriod.toFixed(0) + ' s';
+        document.getElementById('wave-period').textContent = r.wavePeriod.toFixed(0) + 's';
+        document.getElementById('wind-speed').textContent = Math.round(r.windSpeedMph) + ' mph';
+        document.getElementById('wind-gust').textContent = Math.round(r.windGustMph) + ' mph';
 
         // Update cards
         updateCards(r);
 
-        // Update spark charts
+        // Update bar charts
         var hourly = OceanWeather.getHourlyData();
-        if (hourly) updateSparks(hourly);
+        if (hourly) updateBars(hourly);
     }
 
     function updateCards(r) {
@@ -160,107 +160,67 @@
         document.getElementById('card-wind-val').textContent = Math.round(r.windSpeedMph);
         document.getElementById('card-wind-dir').textContent = OceanWeather.degreesToCompass(r.windDirDeg);
 
-        // Wave height card
-        document.getElementById('card-height-val').textContent = (r.waveHeight * 3.281).toFixed(1);
-        document.getElementById('card-height-detail').textContent =
-            OceanWeather.degreesToCompass(r.waveDirection) + ' Swell';
+        // Swell card (wave height + direction)
+        document.getElementById('card-swell-val').textContent = (r.waveHeight * 3.281).toFixed(1);
+        document.getElementById('card-swell-dir').textContent =
+            OceanWeather.degreesToCompass(r.waveDirection);
 
-        // Wave period card
+        // Period card
         document.getElementById('card-period-val').textContent = r.wavePeriod.toFixed(0);
         document.getElementById('card-period-detail').textContent = getPeriodLabel(r.wavePeriod);
-
-        // SST card
-        var tempF = r.seaSurfaceTemp * 9 / 5 + 32;
-        document.getElementById('card-sst-val').textContent = Math.round(tempF);
-        document.getElementById('card-sst-detail').textContent = getTempLabel(r.seaSurfaceTemp);
     }
 
     function getPeriodLabel(period) {
-        if (period < 6) return 'Short Period';
-        if (period < 10) return 'Medium Period';
-        if (period < 14) return 'Long Period';
-        return 'Very Long Period';
+        if (period < 6) return 'Short';
+        if (period < 10) return 'Medium';
+        if (period < 14) return 'Long';
+        return 'Very Long';
     }
 
-    function getTempLabel(tempC) {
-        if (tempC < 10) return 'Cold';
-        if (tempC < 16) return 'Cool';
-        if (tempC < 22) return 'Mild';
-        if (tempC < 28) return 'Warm';
-        return 'Hot';
+    // --- Bar chart rendering ---
+    var BAR_COUNT = 7;
+
+    function updateBars(hourly) {
+        renderBars('bars-wind', hourly.windSpeed, hourly.currentIndex);
+        renderBars('bars-swell', hourly.waveHeight, hourly.currentIndex);
+        renderBars('bars-period', hourly.wavePeriod, hourly.currentIndex);
     }
 
-    // --- Spark chart rendering ---
-    function updateSparks(hourly) {
-        renderSpark('spark-wind', hourly.windSpeed, hourly.currentIndex);
-        renderSpark('spark-height', hourly.waveHeight, hourly.currentIndex);
-        renderSpark('spark-period', hourly.wavePeriod, hourly.currentIndex);
-        renderSpark('spark-sst', hourly.seaSurfaceTemp, hourly.currentIndex);
-    }
+    function renderBars(containerId, data, currentIdx) {
+        var container = document.getElementById(containerId);
+        if (!container || !data || data.length === 0) return;
 
-    function renderSpark(svgId, data, currentIdx) {
-        var svg = document.getElementById(svgId);
-        if (!svg || !data || data.length === 0) return;
-
-        // Clear previous content
-        svg.innerHTML = '';
-
-        var w = 120, h = 32, pad = 3;
+        // Sample BAR_COUNT evenly-spaced points from the data
         var n = data.length;
-        if (n < 2) return;
-
-        // Find min/max for scaling
-        var min = Infinity, max = -Infinity;
-        for (var i = 0; i < n; i++) {
-            var v = data[i];
-            if (v == null || isNaN(v)) continue;
-            if (v < min) min = v;
-            if (v > max) max = v;
-        }
-        var range = max - min || 1;
-
-        // Build points
-        var points = [];
-        for (var i = 0; i < n; i++) {
-            var v = data[i];
-            if (v == null || isNaN(v)) v = min;
-            var x = (i / (n - 1)) * w;
-            var y = pad + (1 - (v - min) / range) * (h - pad * 2);
-            points.push(x.toFixed(1) + ',' + y.toFixed(1));
+        var samples = [];
+        for (var i = 0; i < BAR_COUNT; i++) {
+            var idx = Math.round(i * (n - 1) / (BAR_COUNT - 1));
+            var v = data[idx];
+            samples.push(v == null || isNaN(v) ? 0 : v);
         }
 
-        var polylineStr = points.join(' ');
-
-        // Area fill (closed path from line to bottom)
-        var areaPath = 'M' + points[0];
-        for (var i = 1; i < points.length; i++) {
-            areaPath += ' L' + points[i];
+        // Find max for scaling
+        var max = 0;
+        for (var i = 0; i < samples.length; i++) {
+            if (samples[i] > max) max = samples[i];
         }
-        areaPath += ' L' + w + ',' + h + ' L0,' + h + ' Z';
+        if (max === 0) max = 1;
 
-        var area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        area.setAttribute('d', areaPath);
-        area.setAttribute('class', 'spark-area');
-        svg.appendChild(area);
+        // Create or reuse bar elements
+        if (container.children.length !== BAR_COUNT) {
+            container.innerHTML = '';
+            for (var i = 0; i < BAR_COUNT; i++) {
+                var bar = document.createElement('div');
+                bar.className = 'card-bar';
+                container.appendChild(bar);
+            }
+        }
 
-        // Line
-        var line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-        line.setAttribute('points', polylineStr);
-        line.setAttribute('class', 'spark-line');
-        svg.appendChild(line);
-
-        // Current-hour dot
-        if (currentIdx >= 0 && currentIdx < n) {
-            var cx = (currentIdx / (n - 1)) * w;
-            var v = data[currentIdx];
-            if (v == null || isNaN(v)) v = min;
-            var cy = pad + (1 - (v - min) / range) * (h - pad * 2);
-
-            var dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            dot.setAttribute('cx', cx.toFixed(1));
-            dot.setAttribute('cy', cy.toFixed(1));
-            dot.setAttribute('class', 'spark-dot');
-            svg.appendChild(dot);
+        // Set heights
+        for (var i = 0; i < BAR_COUNT; i++) {
+            var pct = (samples[i] / max) * 100;
+            pct = Math.max(pct, 12); // minimum visible height
+            container.children[i].style.height = pct + '%';
         }
     }
 
@@ -280,14 +240,33 @@
     var locations = OceanWeather.getLocations();
     var currentLocationIndex = 0;
 
+    function fitLocationName(el) {
+        // Reset to base size
+        el.style.fontSize = '';
+        var maxWidth = el.parentElement.offsetWidth;
+        var fontSize = parseFloat(getComputedStyle(el).fontSize);
+        var minSize = 22;
+        while (el.scrollWidth > maxWidth && fontSize > minSize) {
+            fontSize -= 1;
+            el.style.fontSize = fontSize + 'px';
+        }
+    }
+
     function setLocation(idx) {
         currentLocationIndex = idx;
         var loc = locations[idx];
-        document.getElementById('location-name').textContent = loc.name;
+        var nameEl = document.getElementById('location-name');
+        nameEl.textContent = loc.name;
+        fitLocationName(nameEl);
         document.getElementById('location-coords').textContent =
-            'LAT ' + loc.lat.toFixed(3) + '  LON ' + Math.abs(loc.lng).toFixed(3);
+            'LAT ' + loc.lat.toFixed(3) + '    LON ' + Math.abs(loc.lng).toFixed(3);
         OceanWeather.setLocation(loc);
     }
+
+    window.addEventListener('resize', function () {
+        var nameEl = document.getElementById('location-name');
+        fitLocationName(nameEl);
+    });
 
     document.getElementById('location-next').addEventListener('click', function () {
         setLocation((currentLocationIndex + 1) % locations.length);

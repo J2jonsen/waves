@@ -14,44 +14,67 @@
     <canvas id="simulator"></canvas>
     <div id="sky"></div>
 
+    <!-- Sticky header -->
+    <div id="hero-top">
+        <div id="header-bar">
+            <div id="logo">
+                <svg width="82" height="36" viewBox="0 0 82 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <mask id="mask0_1_9" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="82" height="36">
+                        <path d="M81.7817 35.1803H0V0H81.7817V35.1803Z" fill="white"/>
+                    </mask>
+                    <g mask="url(#mask0_1_9)">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M50.5773 23.8942L52.5673 20.9105L33.3227 20.9092L35.3158 17.9242L14.6112 17.9216L17.3827 13.7646L19.038 11.2843L36.6425 11.2857L34.6479 14.272L53.894 14.2733L51.904 17.257L74.2564 17.2583H77.1324L72.707 23.8955L50.5773 23.8942ZM77.1324 26.2185L72.707 32.8571H44.6011L46.5912 29.8734L27.3465 29.8721L29.3396 26.8858L8.6335 26.8845L10.6932 23.7946L13.0619 20.2459L30.6663 20.2472L28.6732 23.2322L47.9179 23.2335L45.9278 26.2172L74.2564 26.2185H77.1324ZM59.8748 5.30648L57.8802 8.29803H77.1324L72.707 14.934L56.5535 14.9327L58.545 11.9503L39.3019 11.949L41.295 8.96136L20.5874 8.96005L25.0142 2.32279H42.6217L40.6301 5.30779L59.8748 5.30648ZM75.8057 14.9353L81.7819 5.97375H62.5312L64.5242 2.9835L45.2796 2.98481L47.2712 -0.00149536H23.4649L17.4872 8.96005L11.511 17.9216H11.5095L10.8901 18.8524L9.96171 20.2446L8.97577 21.722L-0.000610352 35.1801L3.09955 35.1774L7.08266 29.2088L24.6886 29.2101L22.6955 32.1951L41.9417 32.1964L39.9501 35.1801H74.2564L81.7819 23.8955H75.8057L81.7819 14.9353H75.8057Z" fill="white"/>
+                    </g>
+                </svg>
+            </div>
+            <div id="hero-actions">
+                <button id="location-next" aria-label="Next location">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </button>
+                <button id="admin-toggle" aria-label="Toggle tuning panel">&#9881;</button>
+            </div>
+        </div>
+        <div id="hero-location">
+            <h1 id="location-name">Loading...</h1>
+            <span id="location-coords"></span>
+        </div>
+    </div>
+
     <!-- Scrollable content -->
     <div id="scroll-wrap">
 
         <!-- Hero: 100vh transparent spacer over the animation -->
         <section id="hero">
-            <div id="hero-top">
-                <div id="hero-location">
-                    <div id="location-row">
-                        <h1 id="location-name">Loading...</h1>
-                        <button id="location-next" aria-label="Next location">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                        </button>
-                    </div>
-                    <span id="location-coords"></span>
-                </div>
-                <div id="hero-actions">
-                    <button id="admin-toggle" aria-label="Toggle tuning panel">&#9881;</button>
-                </div>
-            </div>
-
             <div id="hero-bottom">
                 <div id="sea-state-label" class="hero-sea-state">--</div>
                 <div id="hud-stats">
                     <div class="hud-stat">
-                        <span class="hud-label">Wind</span>
-                        <span class="hud-value" id="wind-speed">--</span>
+                        <div class="hud-accent"></div>
+                        <div class="hud-stat-content">
+                            <span class="hud-label">HEIGHT</span>
+                            <span class="hud-value" id="wave-height">--</span>
+                        </div>
                     </div>
                     <div class="hud-stat">
-                        <span class="hud-label">SST</span>
-                        <span class="hud-value" id="sst-value">--</span>
+                        <div class="hud-accent"></div>
+                        <div class="hud-stat-content">
+                            <span class="hud-label">PERIOD</span>
+                            <span class="hud-value" id="wave-period">--</span>
+                        </div>
                     </div>
                     <div class="hud-stat">
-                        <span class="hud-label">Height</span>
-                        <span class="hud-value" id="wave-height">--</span>
+                        <div class="hud-accent"></div>
+                        <div class="hud-stat-content">
+                            <span class="hud-label">WIND</span>
+                            <span class="hud-value" id="wind-speed">--</span>
+                        </div>
                     </div>
                     <div class="hud-stat">
-                        <span class="hud-label">Period</span>
-                        <span class="hud-value" id="wave-period">--</span>
+                        <div class="hud-accent"></div>
+                        <div class="hud-stat-content">
+                            <span class="hud-label">GUST</span>
+                            <span class="hud-value" id="wind-gust">--</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -68,19 +91,19 @@
                 <div class="card-info">
                     <div class="card-info-label">WIND</div>
                     <div class="card-info-detail" id="card-wind-dir">--</div>
-                    <svg class="spark" id="spark-wind" viewBox="0 0 120 32" preserveAspectRatio="none"></svg>
+                    <div class="card-bars" id="bars-wind"></div>
                 </div>
             </div>
 
-            <div class="data-card" id="card-height" style="--delay: 1">
-                <div class="card-pill pill-height">
-                    <span class="pill-value" id="card-height-val">--</span>
+            <div class="data-card" id="card-swell" style="--delay: 1">
+                <div class="card-pill pill-swell">
+                    <span class="pill-value" id="card-swell-val">--</span>
                     <span class="pill-unit">FT</span>
                 </div>
                 <div class="card-info">
-                    <div class="card-info-label" id="card-height-dir">WAVE HEIGHT</div>
-                    <div class="card-info-detail" id="card-height-detail">--</div>
-                    <svg class="spark" id="spark-height" viewBox="0 0 120 32" preserveAspectRatio="none"></svg>
+                    <div class="card-info-label">SWELL</div>
+                    <div class="card-info-detail" id="card-swell-dir">--</div>
+                    <div class="card-bars" id="bars-swell"></div>
                 </div>
             </div>
 
@@ -90,21 +113,9 @@
                     <span class="pill-unit">S</span>
                 </div>
                 <div class="card-info">
-                    <div class="card-info-label">WAVE PERIOD</div>
+                    <div class="card-info-label">PERIOD</div>
                     <div class="card-info-detail" id="card-period-detail">--</div>
-                    <svg class="spark" id="spark-period" viewBox="0 0 120 32" preserveAspectRatio="none"></svg>
-                </div>
-            </div>
-
-            <div class="data-card" id="card-sst" style="--delay: 3">
-                <div class="card-pill pill-sst">
-                    <span class="pill-value" id="card-sst-val">--</span>
-                    <span class="pill-unit">&deg;F</span>
-                </div>
-                <div class="card-info">
-                    <div class="card-info-label">SEA SURFACE TEMP</div>
-                    <div class="card-info-detail" id="card-sst-detail">--</div>
-                    <svg class="spark" id="spark-sst" viewBox="0 0 120 32" preserveAspectRatio="none"></svg>
+                    <div class="card-bars" id="bars-period"></div>
                 </div>
             </div>
         </section>
