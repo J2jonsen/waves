@@ -59,8 +59,10 @@ canvas {
     left: 0;
     right: 0;
     z-index: 10;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    align-items: center;
     padding: 16px 20px;
     padding-bottom: 40px;
     background: linear-gradient(
@@ -71,57 +73,62 @@ canvas {
         transparent 100%
     );
     pointer-events: none;
+    transition: padding-bottom 0.4s ease, gap 0.4s ease;
+    gap: 0;
 }
 
 #hero-top * {
     pointer-events: auto;
 }
 
-#header-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
 #logo {
+    grid-column: 1;
+    grid-row: 1;
     display: flex;
     align-items: center;
 }
 
-#hero-actions {
-    display: flex;
-    gap: 10px;
+#logo svg {
+    transition: width 0.4s ease, height 0.4s ease;
 }
 
-#location-next,
-#admin-toggle {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+#location-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+#location-next {
+    background: none;
+    border: none;
     color: white;
-    width: 44px;
-    height: 44px;
+    opacity: 0.4;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     padding: 0;
-    font-size: 20px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: background 0.2s;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
 }
 
-#location-next:hover,
-#admin-toggle:hover {
-    background: rgba(255, 255, 255, 0.22);
+#location-next:hover {
+    opacity: 0.8;
 }
 
 #hero-location {
+    grid-column: 1 / -1;
+    grid-row: 2;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    margin-top: 12px;
+    min-width: 0;
+    transition: all 0.4s ease;
 }
 
 #hero-location h1 {
@@ -131,6 +138,8 @@ canvas {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
+    transition: font-size 0.4s ease;
 }
 
 #location-coords {
@@ -139,6 +148,38 @@ canvas {
     text-transform: uppercase;
     letter-spacing: 2px;
     font-weight: 400;
+    transition: opacity 0.3s ease, max-height 0.3s ease;
+    max-height: 24px;
+    overflow: hidden;
+}
+
+/* Collapsed header state — single row: [logo] [location] */
+#hero-top.collapsed {
+    grid-template-rows: auto;
+    gap: 12px;
+    padding-bottom: 16px;
+}
+
+#hero-top.collapsed #logo svg {
+    width: 54px;
+    height: 24px;
+}
+
+#hero-top.collapsed #hero-location {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0;
+    min-width: 0;
+}
+
+#hero-top.collapsed #hero-location h1 {
+    font-size: 30px;
+    font-weight: 600;
+}
+
+#hero-top.collapsed #location-coords {
+    opacity: 0;
+    max-height: 0;
 }
 
 #hero {
@@ -154,6 +195,13 @@ canvas {
 #hero-bottom {
     pointer-events: none;
     margin-bottom: 6vh;
+}
+
+#weather-condition {
+    font-size: 20px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 4px;
 }
 
 .hero-sea-state {
@@ -215,8 +263,8 @@ canvas {
     background: linear-gradient(
         to bottom,
         rgba(10, 25, 45, 0) 0%,
-        rgba(10, 25, 45, 0.85) 60px,
-        #081428 140px
+        rgba(10, 25, 45, 0.35) 80px,
+        rgba(8, 20, 40, 0.45) 200px
     );
     padding-top: 40px;
 }
@@ -236,22 +284,22 @@ canvas {
     display: flex;
     align-items: center;
     gap: 16px;
-    background: #091327;
+    background: rgba(9, 19, 39, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 28px;
     padding: 16px;
     overflow: hidden;
 
     opacity: 0;
-    transform: translateY(20px);
-    animation: cardIn 0.5s ease forwards;
-    animation-delay: calc(var(--delay, 0) * 0.08s + 0.15s);
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
 }
 
-@keyframes cardIn {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.data-card.visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 /* Colored pill with large number */
@@ -284,26 +332,24 @@ canvas {
     opacity: 0.85;
 }
 
-/* Pill color themes */
-.pill-wind {
-    background: #f2ba3b;
-}
-
-.pill-swell {
-    background: #afc3d5;
-}
-
+/* Pill colors set dynamically via JS severity system */
+.pill-wind,
+.pill-swell,
 .pill-period {
-    background: #c0dcd4;
+    background: #AFC3D5;
 }
 
-/* Card info (right side) */
+/* Card layout: info left, pill right */
+.data-card {
+    flex-direction: row-reverse;
+}
+
 .card-info {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: flex-start;
     gap: 4px;
 }
 
@@ -327,10 +373,28 @@ canvas {
 /* Bar chart */
 .card-bars {
     display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 8px;
+}
+
+.bar-labels {
+    display: flex;
+    justify-content: space-between;
+}
+
+.bar-label {
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.bar-row {
+    display: flex;
     align-items: flex-end;
     gap: 5px;
-    height: 50px;
-    margin-top: 8px;
+    height: 40px;
 }
 
 .card-bar {
@@ -340,10 +404,7 @@ canvas {
     transition: height 0.4s ease;
 }
 
-/* Bar colors per card */
-#card-wind .card-bar { background: #f2ba3b; }
-#card-swell .card-bar { background: #afc3d5; }
-#card-period .card-bar { background: #c0dcd4; }
+/* Bar colors set dynamically via JS severity system */
 
 /* ==================== LOADING ==================== */
 #loading {
@@ -509,6 +570,35 @@ canvas {
 
 .admin-actions button:hover {
     background: rgba(74, 158, 255, 0.3);
+}
+
+/* ==================== FOOTER ==================== */
+#site-footer {
+    display: flex;
+    justify-content: center;
+    padding: 20px 16px 40px;
+    background: rgba(8, 20, 40, 0.45);
+}
+
+#admin-toggle {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    opacity: 0.4;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    font-size: 18px;
+    transition: opacity 0.2s;
+}
+
+#admin-toggle:hover {
+    opacity: 0.7;
 }
 
 /* ==================== RESPONSIVE ==================== */

@@ -50,7 +50,7 @@ var OceanWeather = (function () {
         var windUrl = 'https://api.open-meteo.com/v1/forecast' +
             '?latitude=' + location.lat +
             '&longitude=' + location.lng +
-            '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m' +
+            '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code' +
             '&forecast_days=1&timeformat=unixtime';
 
         return Promise.all([
@@ -141,6 +141,7 @@ var OceanWeather = (function () {
         var windSpeedKmh = getInterpolatedValue(weatherData.wind.wind_speed_10m, idx, t);
         var windGustKmh = getInterpolatedValue(weatherData.wind.wind_gusts_10m, idx, t);
         var windDirDeg = getInterpolatedValue(weatherData.wind.wind_direction_10m, idx, t);
+        var weatherCode = weatherData.wind.weather_code ? weatherData.wind.weather_code[idx] : 0;
 
         // --- Wind mapping ---
         // Convert km/h to m/s
@@ -189,9 +190,25 @@ var OceanWeather = (function () {
                 windGustKmh: windGustKmh,
                 windGustMph: (windGustKmh / 3.6) * 2.237,
                 windDirDeg: windDirDeg,
-                beaufort: getBeaufortScale(windSpeedMs)
+                beaufort: getBeaufortScale(windSpeedMs),
+                weatherCondition: wmoCodeToDescription(weatherCode)
             }
         };
+    }
+
+    // --- WMO Weather Codes ---
+
+    function wmoCodeToDescription(code) {
+        var WMO = {
+            0: 'Clear sky', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast',
+            45: 'Foggy', 48: 'Icy fog',
+            51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
+            61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
+            71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+            80: 'Light showers', 81: 'Showers', 82: 'Heavy showers',
+            95: 'Thunderstorm', 96: 'Thunderstorm w/ hail', 99: 'Severe thunderstorm'
+        };
+        return WMO[code] || 'Clear sky';
     }
 
     // --- Beaufort Scale ---

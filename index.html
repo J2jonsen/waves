@@ -16,26 +16,23 @@
 
     <!-- Sticky header -->
     <div id="hero-top">
-        <div id="header-bar">
-            <div id="logo">
-                <svg width="82" height="36" viewBox="0 0 82 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <mask id="mask0_1_9" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="82" height="36">
-                        <path d="M81.7817 35.1803H0V0H81.7817V35.1803Z" fill="white"/>
-                    </mask>
-                    <g mask="url(#mask0_1_9)">
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M50.5773 23.8942L52.5673 20.9105L33.3227 20.9092L35.3158 17.9242L14.6112 17.9216L17.3827 13.7646L19.038 11.2843L36.6425 11.2857L34.6479 14.272L53.894 14.2733L51.904 17.257L74.2564 17.2583H77.1324L72.707 23.8955L50.5773 23.8942ZM77.1324 26.2185L72.707 32.8571H44.6011L46.5912 29.8734L27.3465 29.8721L29.3396 26.8858L8.6335 26.8845L10.6932 23.7946L13.0619 20.2459L30.6663 20.2472L28.6732 23.2322L47.9179 23.2335L45.9278 26.2172L74.2564 26.2185H77.1324ZM59.8748 5.30648L57.8802 8.29803H77.1324L72.707 14.934L56.5535 14.9327L58.545 11.9503L39.3019 11.949L41.295 8.96136L20.5874 8.96005L25.0142 2.32279H42.6217L40.6301 5.30779L59.8748 5.30648ZM75.8057 14.9353L81.7819 5.97375H62.5312L64.5242 2.9835L45.2796 2.98481L47.2712 -0.00149536H23.4649L17.4872 8.96005L11.511 17.9216H11.5095L10.8901 18.8524L9.96171 20.2446L8.97577 21.722L-0.000610352 35.1801L3.09955 35.1774L7.08266 29.2088L24.6886 29.2101L22.6955 32.1951L41.9417 32.1964L39.9501 35.1801H74.2564L81.7819 23.8955H75.8057L81.7819 14.9353H75.8057Z" fill="white"/>
-                    </g>
-                </svg>
-            </div>
-            <div id="hero-actions">
-                <button id="location-next" aria-label="Next location">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                </button>
-                <button id="admin-toggle" aria-label="Toggle tuning panel">&#9881;</button>
-            </div>
+        <div id="logo">
+            <svg width="82" height="36" viewBox="0 0 82 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <mask id="mask0_1_9" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="82" height="36">
+                    <path d="M81.7817 35.1803H0V0H81.7817V35.1803Z" fill="white"/>
+                </mask>
+                <g mask="url(#mask0_1_9)">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M50.5773 23.8942L52.5673 20.9105L33.3227 20.9092L35.3158 17.9242L14.6112 17.9216L17.3827 13.7646L19.038 11.2843L36.6425 11.2857L34.6479 14.272L53.894 14.2733L51.904 17.257L74.2564 17.2583H77.1324L72.707 23.8955L50.5773 23.8942ZM77.1324 26.2185L72.707 32.8571H44.6011L46.5912 29.8734L27.3465 29.8721L29.3396 26.8858L8.6335 26.8845L10.6932 23.7946L13.0619 20.2459L30.6663 20.2472L28.6732 23.2322L47.9179 23.2335L45.9278 26.2172L74.2564 26.2185H77.1324ZM59.8748 5.30648L57.8802 8.29803H77.1324L72.707 14.934L56.5535 14.9327L58.545 11.9503L39.3019 11.949L41.295 8.96136L20.5874 8.96005L25.0142 2.32279H42.6217L40.6301 5.30779L59.8748 5.30648ZM75.8057 14.9353L81.7819 5.97375H62.5312L64.5242 2.9835L45.2796 2.98481L47.2712 -0.00149536H23.4649L17.4872 8.96005L11.511 17.9216H11.5095L10.8901 18.8524L9.96171 20.2446L8.97577 21.722L-0.000610352 35.1801L3.09955 35.1774L7.08266 29.2088L24.6886 29.2101L22.6955 32.1951L41.9417 32.1964L39.9501 35.1801H74.2564L81.7819 23.8955H75.8057L81.7819 14.9353H75.8057Z" fill="white"/>
+                </g>
+            </svg>
         </div>
         <div id="hero-location">
-            <h1 id="location-name">Loading...</h1>
+            <div id="location-row">
+                <h1 id="location-name">Loading...</h1>
+                <button id="location-next" aria-label="Next location">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
             <span id="location-coords"></span>
         </div>
     </div>
@@ -46,6 +43,7 @@
         <!-- Hero: 100vh transparent spacer over the animation -->
         <section id="hero">
             <div id="hero-bottom">
+                <div id="weather-condition">--</div>
                 <div id="sea-state-label" class="hero-sea-state">--</div>
                 <div id="hud-stats">
                     <div class="hud-stat">
@@ -120,6 +118,13 @@
             </div>
         </section>
         </div>
+
+        <!-- Footer -->
+        <footer id="site-footer">
+            <button id="admin-toggle" aria-label="Settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+        </footer>
     </div>
 
     <!-- Admin tuning panel -->

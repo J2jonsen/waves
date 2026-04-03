@@ -134,18 +134,54 @@
     // --- Weather integration ---
     var pauseWeather = false;
 
+    // --- Severity system ---
+    var SEVERITY_COLORS = {
+        low:    '#AFC3D5',
+        medium: '#F3B139',
+        high:   '#E3584F'
+    };
+
+    function getSeverity(value, metric) {
+        switch (metric) {
+            case 'height':  return value < 3   ? 'low' : value < 8   ? 'medium' : 'high';
+            case 'period':  return value < 7   ? 'low' : value < 12  ? 'medium' : 'high';
+            case 'wind':    return value < 10  ? 'low' : value < 20  ? 'medium' : 'high';
+            case 'gust':    return value < 15  ? 'low' : value < 25  ? 'medium' : 'high';
+            default: return 'low';
+        }
+    }
+
+    function severityColor(value, metric) {
+        return SEVERITY_COLORS[getSeverity(value, metric)];
+    }
+
     function updateHUD(data) {
         if (!data || !data.raw) return;
         var r = data.raw;
 
-        // Sea state label
+        // Weather condition + sea state
+        document.getElementById('weather-condition').textContent = r.weatherCondition;
         document.getElementById('sea-state-label').textContent = r.beaufort.description;
 
-        // HUD stats
-        document.getElementById('wave-height').textContent = (r.waveHeight * 3.281).toFixed(1) + ' ft';
+        // HUD stats + accent bar colors
+        var heightFt = r.waveHeight * 3.281;
+        document.getElementById('wave-height').textContent = heightFt.toFixed(1) + ' ft';
         document.getElementById('wave-period').textContent = r.wavePeriod.toFixed(0) + 's';
         document.getElementById('wind-speed').textContent = Math.round(r.windSpeedMph) + ' mph';
         document.getElementById('wind-gust').textContent = Math.round(r.windGustMph) + ' mph';
+
+        // Color HUD accent lines
+        var hudStats = document.querySelectorAll('.hud-stat');
+        var hudMetrics = [
+            { value: heightFt,             metric: 'height' },
+            { value: r.wavePeriod,         metric: 'period' },
+            { value: r.windSpeedMph,       metric: 'wind'   },
+            { value: r.windGustMph,        metric: 'gust'   }
+        ];
+        hudMetrics.forEach(function(m, i) {
+            var accent = hudStats[i] && hudStats[i].querySelector('.hud-accent');
+            if (accent) accent.style.background = severityColor(m.value, m.metric);
+        });
 
         // Update cards
         updateCards(r);
@@ -156,19 +192,32 @@
     }
 
     function updateCards(r) {
+        var heightFt = r.waveHeight * 3.281;
+        var windColor   = severityColor(r.windSpeedMph, 'wind');
+        var swellColor  = severityColor(heightFt, 'height');
+        var periodColor = severityColor(r.wavePeriod, 'period');
+
         // Wind card
         document.getElementById('card-wind-val').textContent = Math.round(r.windSpeedMph);
         document.getElementById('card-wind-dir').textContent = OceanWeather.degreesToCompass(r.windDirDeg);
+        document.querySelector('#card-wind .card-pill').style.background = windColor;
 
-        // Swell card (wave height + direction)
-        document.getElementById('card-swell-val').textContent = (r.waveHeight * 3.281).toFixed(1);
+        // Swell card
+        document.getElementById('card-swell-val').textContent = heightFt.toFixed(1);
         document.getElementById('card-swell-dir').textContent =
             OceanWeather.degreesToCompass(r.waveDirection);
+        document.querySelector('#card-swell .card-pill').style.background = swellColor;
 
         // Period card
         document.getElementById('card-period-val').textContent = r.wavePeriod.toFixed(0);
         document.getElementById('card-period-detail').textContent = getPeriodLabel(r.wavePeriod);
+        document.querySelector('#card-period .card-pill').style.background = periodColor;
+
+        // Store colors for bar charts
+        cardColors = { wind: windColor, swell: swellColor, period: periodColor };
     }
+
+    var cardColors = { wind: '#F3B139', swell: '#AFC3D5', period: '#AFC3D5' };
 
     function getPeriodLabel(period) {
         if (period < 6) return 'Short';
@@ -178,15 +227,15 @@
     }
 
     // --- Bar chart rendering ---
-    var BAR_COUNT = 7;
+    var BAR_COUNT = 6;
 
     function updateBars(hourly) {
-        renderBars('bars-wind', hourly.windSpeed, hourly.currentIndex);
-        renderBars('bars-swell', hourly.waveHeight, hourly.currentIndex);
-        renderBars('bars-period', hourly.wavePeriod, hourly.currentIndex);
+        renderBars('bars-wind',   hourly.windSpeed,  'wind');
+        renderBars('bars-swell',  hourly.waveHeight, 'height');
+        renderBars('bars-period', hourly.wavePeriod, 'period');
     }
 
-    function renderBars(containerId, data, currentIdx) {
+    function renderBars(containerId, data, metric) {
         var container = document.getElementById(containerId);
         if (!container || !data || data.length === 0) return;
 
@@ -206,21 +255,38 @@
         }
         if (max === 0) max = 1;
 
-        // Create or reuse bar elements
-        if (container.children.length !== BAR_COUNT) {
+        // Create structure: labels row + bars row
+        var barRow = container.querySelector('.bar-row');
+        if (!barRow || barRow.children.length !== BAR_COUNT) {
             container.innerHTML = '';
+            var labelsRow = document.createElement('div');
+            labelsRow.className = 'bar-labels';
+            var labelNow = document.createElement('span');
+            labelNow.className = 'bar-label';
+            labelNow.textContent = 'now';
+            var labelEnd = document.createElement('span');
+            labelEnd.className = 'bar-label';
+            labelEnd.textContent = '+24hr';
+            labelsRow.appendChild(labelNow);
+            labelsRow.appendChild(labelEnd);
+            container.appendChild(labelsRow);
+
+            barRow = document.createElement('div');
+            barRow.className = 'bar-row';
             for (var i = 0; i < BAR_COUNT; i++) {
                 var bar = document.createElement('div');
                 bar.className = 'card-bar';
-                container.appendChild(bar);
+                barRow.appendChild(bar);
             }
+            container.appendChild(barRow);
         }
 
-        // Set heights
+        // Set height and per-bar forecasted severity color
         for (var i = 0; i < BAR_COUNT; i++) {
             var pct = (samples[i] / max) * 100;
-            pct = Math.max(pct, 12); // minimum visible height
-            container.children[i].style.height = pct + '%';
+            pct = Math.max(pct, 12);
+            barRow.children[i].style.height = pct + '%';
+            barRow.children[i].style.background = severityColor(samples[i], metric);
         }
     }
 
@@ -241,11 +307,21 @@
     var currentLocationIndex = 0;
 
     function fitLocationName(el) {
-        // Reset to base size
+        // Reset to base size so CSS takes effect
         el.style.fontSize = '';
-        var maxWidth = el.parentElement.offsetWidth;
+        var headerEl = document.getElementById('hero-top');
+        if (!headerEl) return;
+        var collapsed = headerEl.classList.contains('collapsed');
+        var logoEl = document.getElementById('logo');
+        var logoWidth = logoEl ? logoEl.offsetWidth : 60;
+        // Use header width as stable reference (doesn't shrink with text)
+        var padding = 40; // left + right padding on hero-top
+        var arrowWidth = 40; // arrow button + gap
+        var maxWidth = collapsed
+            ? (headerEl.offsetWidth - logoWidth - padding - arrowWidth - 12) // 12 = grid gap
+            : (headerEl.offsetWidth - padding - arrowWidth);
         var fontSize = parseFloat(getComputedStyle(el).fontSize);
-        var minSize = 22;
+        var minSize = collapsed ? 22 : 24;
         while (el.scrollWidth > maxWidth && fontSize > minSize) {
             fontSize -= 1;
             el.style.fontSize = fontSize + 'px';
@@ -273,6 +349,46 @@
     });
 
     setLocation(0);
+
+    // --- Card scroll-in animations ---
+    var cardObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                cardObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.data-card').forEach(function (card) {
+        cardObserver.observe(card);
+    });
+
+    // --- Header collapse on scroll ---
+    var heroTop = document.getElementById('hero-top');
+    var heroSection = document.getElementById('hero');
+    var isCollapsed = false;
+
+    function checkHeaderCollapse() {
+        var scrollY = window.scrollY || document.documentElement.scrollTop;
+        var triggerPoint = heroSection.offsetHeight * 0.65;
+        var shouldCollapse = scrollY > triggerPoint;
+
+        if (shouldCollapse !== isCollapsed) {
+            isCollapsed = shouldCollapse;
+            if (shouldCollapse) {
+                heroTop.classList.add('collapsed');
+            } else {
+                heroTop.classList.remove('collapsed');
+            }
+            // Refit location name for new size
+            setTimeout(function () {
+                fitLocationName(document.getElementById('location-name'));
+            }, 50);
+        }
+    }
+
+    window.addEventListener('scroll', checkHeaderCollapse, { passive: true });
 
     // --- Render loop ---
     var lastTime = 0;
