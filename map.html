@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Waves — Map</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+
+    <link rel="stylesheet" href="map.css">
+</head>
+<body>
+    <header id="map-header">
+        <a href="index.html" id="map-logo" aria-label="Back to waves">
+            <svg width="82" height="36" viewBox="0 0 82 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <mask id="mask0_1_9" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="82" height="36">
+                    <path d="M81.7817 35.1803H0V0H81.7817V35.1803Z" fill="white"/>
+                </mask>
+                <g mask="url(#mask0_1_9)">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M50.5773 23.8942L52.5673 20.9105L33.3227 20.9092L35.3158 17.9242L14.6112 17.9216L17.3827 13.7646L19.038 11.2843L36.6425 11.2857L34.6479 14.272L53.894 14.2733L51.904 17.257L74.2564 17.2583H77.1324L72.707 23.8955L50.5773 23.8942ZM77.1324 26.2185L72.707 32.8571H44.6011L46.5912 29.8734L27.3465 29.8721L29.3396 26.8858L8.6335 26.8845L10.6932 23.7946L13.0619 20.2459L30.6663 20.2472L28.6732 23.2322L47.9179 23.2335L45.9278 26.2172L74.2564 26.2185H77.1324ZM59.8748 5.30648L57.8802 8.29803H77.1324L72.707 14.934L56.5535 14.9327L58.545 11.9503L39.3019 11.949L41.295 8.96136L20.5874 8.96005L25.0142 2.32279H42.6217L40.6301 5.30779L59.8748 5.30648ZM75.8057 14.9353L81.7819 5.97375H62.5312L64.5242 2.9835L45.2796 2.98481L47.2712 -0.00149536H23.4649L17.4872 8.96005L11.511 17.9216H11.5095L10.8901 18.8524L9.96171 20.2446L8.97577 21.722L-0.000610352 35.1801L3.09955 35.1774L7.08266 29.2088L24.6886 29.2101L22.6955 32.1951L41.9417 32.1964L39.9501 35.1801H74.2564L81.7819 23.8955H75.8057L81.7819 14.9353H75.8057Z" fill="white"/>
+                </g>
+            </svg>
+        </a>
+        <span id="map-title">Select Location</span>
+    </header>
+
+    <div id="map"></div>
+
+    <script src="config.js"></script>
+    <script src="map.js"></script>
+</body>
+</html>

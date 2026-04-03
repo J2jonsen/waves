@@ -340,16 +340,47 @@
         OceanWeather.setLocation(loc);
     }
 
+    function setCustomLocation(loc) {
+        currentLocationIndex = -1;
+        var nameEl = document.getElementById('location-name');
+        nameEl.textContent = loc.name;
+        fitLocationName(nameEl);
+        document.getElementById('location-coords').textContent = 'Near Coastal';
+        OceanWeather.setLocation(loc);
+    }
+
     window.addEventListener('resize', function () {
         var nameEl = document.getElementById('location-name');
         fitLocationName(nameEl);
     });
 
     document.getElementById('location-next').addEventListener('click', function () {
-        setLocation((currentLocationIndex + 1) % locations.length);
+        // If on a custom map location, reset to first preset
+        if (currentLocationIndex < 0) {
+            // Clear URL params
+            history.replaceState(null, '', window.location.pathname);
+            setLocation(0);
+        } else {
+            setLocation((currentLocationIndex + 1) % locations.length);
+        }
     });
 
-    setLocation(0);
+    // --- Check for URL params from map page ---
+    var urlParams = new URLSearchParams(window.location.search);
+    var paramLat = urlParams.get('lat');
+    var paramLng = urlParams.get('lng');
+
+    if (paramLat && paramLng) {
+        var lat = parseFloat(paramLat);
+        var lng = parseFloat(paramLng);
+        var name = urlParams.get('name');
+        if (!name) {
+            name = lat.toFixed(3) + ', ' + lng.toFixed(3);
+        }
+        setCustomLocation({ name: name, lat: lat, lng: lng });
+    } else {
+        setLocation(0);
+    }
 
     // --- Card scroll-in animations ---
     var cardObserver = new IntersectionObserver(function (entries) {
