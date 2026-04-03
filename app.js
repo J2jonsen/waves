@@ -307,8 +307,10 @@
     var currentLocationIndex = 0;
 
     function fitLocationName(el) {
-        // Reset to base size so CSS takes effect
+        // Reset inline style so CSS rule applies
         el.style.fontSize = '';
+        // Force reflow so scrollWidth reflects CSS font-size
+        void el.offsetWidth;
         var headerEl = document.getElementById('hero-top');
         if (!headerEl) return;
         var collapsed = headerEl.classList.contains('collapsed');
@@ -334,8 +336,7 @@
         var nameEl = document.getElementById('location-name');
         nameEl.textContent = loc.name;
         fitLocationName(nameEl);
-        document.getElementById('location-coords').textContent =
-            'LAT ' + loc.lat.toFixed(3) + '    LON ' + Math.abs(loc.lng).toFixed(3);
+        document.getElementById('location-coords').textContent = 'Near Coastal';
         OceanWeather.setLocation(loc);
     }
 
