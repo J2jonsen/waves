@@ -96,8 +96,9 @@ canvas {
 #location-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     min-width: 0;
+    width: 100%;
 }
 
 #location-map,
@@ -136,13 +137,14 @@ canvas {
 }
 
 #hero-location h1 {
-    font-size: 42px;
+    font-size: clamp(28px, 9vw, 42px);
     font-weight: 600;
     letter-spacing: -0.5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
+    flex: 1;
     transition: font-size 0.4s ease;
 }
 
@@ -177,7 +179,7 @@ canvas {
 }
 
 #hero-top.collapsed #hero-location h1 {
-    font-size: 30px;
+    font-size: clamp(18px, 4.5vw, 26px);
     font-weight: 600;
 }
 
@@ -187,7 +189,7 @@ canvas {
 }
 
 #hero {
-    height: 82vh;
+    height: 72vh;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;

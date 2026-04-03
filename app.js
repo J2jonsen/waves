@@ -306,53 +306,31 @@
     var locations = OceanWeather.getLocations();
     var currentLocationIndex = 0;
 
-    function fitLocationName(el) {
-        // Reset inline style so CSS rule applies
-        el.style.fontSize = '';
-        // Force reflow so scrollWidth reflects CSS font-size
-        void el.offsetWidth;
-        var headerEl = document.getElementById('hero-top');
-        if (!headerEl) return;
-        var collapsed = headerEl.classList.contains('collapsed');
-        var logoEl = document.getElementById('logo');
-        var logoWidth = logoEl ? logoEl.offsetWidth : 60;
-        // Use header width as stable reference (doesn't shrink with text)
-        var padding = 40; // left + right padding on hero-top
-        var arrowWidth = 40; // arrow button + gap
-        var maxWidth = collapsed
-            ? (headerEl.offsetWidth - logoWidth - padding - arrowWidth - 12) // 12 = grid gap
-            : (headerEl.offsetWidth - padding - arrowWidth);
-        var fontSize = parseFloat(getComputedStyle(el).fontSize);
-        var minSize = collapsed ? 22 : 24;
-        while (el.scrollWidth > maxWidth && fontSize > minSize) {
-            fontSize -= 1;
-            el.style.fontSize = fontSize + 'px';
-        }
+    function clearHUD() {
+        document.getElementById('weather-condition').textContent = '--';
+        document.getElementById('sea-state-label').textContent = '--';
+        document.getElementById('wave-height').textContent = '--';
+        document.getElementById('wave-period').textContent = '--';
+        document.getElementById('wind-speed').textContent = '--';
+        document.getElementById('wind-gust').textContent = '--';
     }
 
     function setLocation(idx) {
         currentLocationIndex = idx;
         var loc = locations[idx];
-        var nameEl = document.getElementById('location-name');
-        nameEl.textContent = loc.name;
-        fitLocationName(nameEl);
+        document.getElementById('location-name').textContent = loc.name;
         document.getElementById('location-coords').textContent = 'Near Coastal';
+        clearHUD();
         OceanWeather.setLocation(loc);
     }
 
     function setCustomLocation(loc) {
         currentLocationIndex = -1;
-        var nameEl = document.getElementById('location-name');
-        nameEl.textContent = loc.name;
-        fitLocationName(nameEl);
+        document.getElementById('location-name').textContent = loc.name;
         document.getElementById('location-coords').textContent = 'Near Coastal';
+        clearHUD();
         OceanWeather.setLocation(loc);
     }
-
-    window.addEventListener('resize', function () {
-        var nameEl = document.getElementById('location-name');
-        fitLocationName(nameEl);
-    });
 
     document.getElementById('location-next').addEventListener('click', function () {
         // If on a custom map location, reset to first preset
@@ -413,10 +391,7 @@
             } else {
                 heroTop.classList.remove('collapsed');
             }
-            // Refit location name for new size
-            setTimeout(function () {
-                fitLocationName(document.getElementById('location-name'));
-            }, 50);
+            // CSS clamp() handles font resizing automatically
         }
     }
 

@@ -51,6 +51,18 @@
         { name: 'Coronado', lat: 32.681, lng: -117.178 }
     ];
 
+    // --- Build GeoJSON from harbors ---
+    var harborsGeoJSON = {
+        type: 'FeatureCollection',
+        features: CA_HARBORS.map(function (loc) {
+            return {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [loc.lng, loc.lat] },
+                properties: { name: loc.name, lat: loc.lat, lng: loc.lng }
+            };
+        })
+    };
+
     // --- Initialize map ---
     var map = new mapboxgl.Map({
         container: 'map',
@@ -64,31 +76,7 @@
 
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
 
-    // --- Darken map to match ocean aesthetic ---
-    map.on('style.load', function () {
-        try {
-            map.setPaintProperty('water', 'fill-color', '#081428');
-            map.setPaintProperty('land', 'background-color', '#0a1a2e');
-        } catch (e) {
-            // Some layers may not exist in all zoom levels
-        }
-
-        // Reduce label brightness
-        var layers = map.getStyle().layers;
-        for (var i = 0; i < layers.length; i++) {
-            var layer = layers[i];
-            if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
-                try {
-                    map.setPaintProperty(layer.id, 'text-color', 'rgba(255, 255, 255, 0.5)');
-                } catch (e) {}
-            }
-        }
-    });
-
-    // --- Track temporary ocean marker ---
-    var tempMarker = null;
-
-    // --- Create harbor markers ---
+    // --- Popup helper ---
     function createPopupHTML(name, lat, lng) {
         var coordsText = lat.toFixed(3) + ', ' + lng.toFixed(3);
         var params = 'lat=' + lat + '&lng=' + lng;
@@ -98,63 +86,125 @@
                '<a class="popup-link" href="index.html?' + params + '">View Waves →</a>';
     }
 
-    var markerClickedRecently = false;
+    // --- Track state ---
+    var tempMarker = null;
+    var harborPopup = new mapboxgl.Popup({ offset: 12, closeButton: true });
 
-    CA_HARBORS.forEach(function (loc) {
-        var el = document.createElement('div');
-        el.className = 'marker-harbor';
-
-        var popup = new mapboxgl.Popup({ offset: 12, closeButton: true })
-            .setHTML(createPopupHTML(loc.name, loc.lat, loc.lng));
-
-        var marker = new mapboxgl.Marker({ element: el })
-            .setLngLat([loc.lng, loc.lat])
-            .setPopup(popup)
-            .addTo(map);
-
-        // Prevent map click from firing when clicking a marker
-        el.addEventListener('click', function () {
-            markerClickedRecently = true;
-            setTimeout(function () { markerClickedRecently = false; }, 100);
-        });
-    });
-
-    // --- Ocean click: place temporary pin ---
-    map.on('click', function (e) {
-        if (markerClickedRecently) return;
-
-        var lat = e.lngLat.lat;
-        var lng = e.lngLat.lng;
-
-        // Remove previous temporary marker
-        if (tempMarker) {
-            tempMarker.remove();
-            tempMarker = null;
+    // --- On style load: add harbor layer + darken map ---
+    map.on('load', function () {
+        // Darken map colors
+        var layers = map.getStyle().layers;
+        for (var i = 0; i < layers.length; i++) {
+            var layer = layers[i];
+            if (layer.id.indexOf('water') !== -1 && layer.type === 'fill') {
+                try { map.setPaintProperty(layer.id, 'fill-color', '#081428'); } catch (e) {}
+            }
+            if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
+                try { map.setPaintProperty(layer.id, 'text-color', 'rgba(255, 255, 255, 0.5)'); } catch (e) {}
+            }
         }
 
-        // Check if click is over water (not land)
-        var features = map.queryRenderedFeatures(e.point, { layers: ['land'] });
-        if (features.length > 0) return; // Clicked on land, ignore
+        // Add harbors as a GeoJSON source + circle layer (GPU-rendered)
+        map.addSource('harbors', {
+            type: 'geojson',
+            data: harborsGeoJSON
+        });
 
-        // Create temporary ocean marker
-        var el = document.createElement('div');
-        el.className = 'marker-ocean';
+        map.addLayer({
+            id: 'harbors-circle',
+            type: 'circle',
+            source: 'harbors',
+            paint: {
+                'circle-radius': [
+                    'interpolate', ['linear'], ['zoom'],
+                    4, 4,
+                    8, 6,
+                    12, 8
+                ],
+                'circle-color': '#AFC3D5',
+                'circle-stroke-color': 'rgba(255, 255, 255, 0.3)',
+                'circle-stroke-width': 1.5,
+                'circle-opacity': 0.9
+            }
+        });
 
-        var popup = new mapboxgl.Popup({ offset: 12, closeButton: true })
-            .setHTML(createPopupHTML(null, lat, lng));
+        // Hover effect: enlarge on hover
+        map.addLayer({
+            id: 'harbors-circle-hover',
+            type: 'circle',
+            source: 'harbors',
+            paint: {
+                'circle-radius': [
+                    'interpolate', ['linear'], ['zoom'],
+                    4, 7,
+                    8, 9,
+                    12, 12
+                ],
+                'circle-color': '#AFC3D5',
+                'circle-stroke-color': 'rgba(255, 255, 255, 0.5)',
+                'circle-stroke-width': 2,
+                'circle-opacity': 0.5
+            },
+            filter: ['==', ['get', 'name'], '']
+        });
 
-        tempMarker = new mapboxgl.Marker({ element: el })
-            .setLngLat([lng, lat])
-            .setPopup(popup)
-            .addTo(map);
+        // --- Harbor click: show popup ---
+        map.on('click', 'harbors-circle', function (e) {
+            if (!e.features || !e.features.length) return;
+            var props = e.features[0].properties;
+            var coords = e.features[0].geometry.coordinates.slice();
 
-        tempMarker.togglePopup();
-    });
+            harborPopup
+                .setLngLat(coords)
+                .setHTML(createPopupHTML(props.name, props.lat, props.lng))
+                .addTo(map);
+        });
 
-    // --- Change cursor on water ---
-    map.on('mousemove', function (e) {
-        var features = map.queryRenderedFeatures(e.point, { layers: ['land'] });
-        map.getCanvas().style.cursor = features.length > 0 ? '' : 'crosshair';
+        // --- Harbor hover: pointer cursor + highlight ---
+        map.on('mouseenter', 'harbors-circle', function (e) {
+            map.getCanvas().style.cursor = 'pointer';
+            if (e.features && e.features.length) {
+                map.setFilter('harbors-circle-hover', ['==', ['get', 'name'], e.features[0].properties.name]);
+            }
+        });
+
+        map.on('mouseleave', 'harbors-circle', function () {
+            map.getCanvas().style.cursor = 'crosshair';
+            map.setFilter('harbors-circle-hover', ['==', ['get', 'name'], '']);
+        });
+
+        // --- Ocean click: place temporary pin ---
+        map.on('click', function (e) {
+            // If a harbor was clicked, the harbors-circle handler already fired
+            var harborFeatures = map.queryRenderedFeatures(e.point, { layers: ['harbors-circle'] });
+            if (harborFeatures.length > 0) return;
+
+            var lat = e.lngLat.lat;
+            var lng = e.lngLat.lng;
+
+            // Remove previous temporary marker
+            if (tempMarker) {
+                tempMarker.remove();
+                tempMarker = null;
+            }
+
+            // Close any open harbor popup
+            harborPopup.remove();
+
+            // Create temporary ocean marker (DOM — only 1 at a time, no lag)
+            var el = document.createElement('div');
+            el.className = 'marker-ocean';
+
+            var popup = new mapboxgl.Popup({ offset: 12, closeButton: true })
+                .setHTML(createPopupHTML(null, lat, lng));
+
+            tempMarker = new mapboxgl.Marker({ element: el })
+                .setLngLat([lng, lat])
+                .setPopup(popup)
+                .addTo(map);
+
+            tempMarker.togglePopup();
+        });
     });
 
 })();
