@@ -643,8 +643,12 @@ canvas {
         width: 17px;
     }
 
+    .bar-row {
+        height: 60px;
+        gap: 7px;
+    }
+
     .card-bars {
-        height: 74px;
-        gap: 8px;
+        gap: 4px;
     }
 }
