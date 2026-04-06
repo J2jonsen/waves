@@ -53,17 +53,24 @@ var OceanWeather = (function () {
             '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code' +
             '&forecast_days=1&timeformat=unixtime';
 
+        // Find nearest NOAA station for tide data
+        var tideStation = findNearestStation(location.lat, location.lng);
+        var tideFetch = tideStation ? fetchTideData(tideStation) : Promise.resolve(null);
+
         return Promise.all([
             fetch(marineUrl).then(function (r) { return r.json(); }),
-            fetch(windUrl).then(function (r) { return r.json(); })
+            fetch(windUrl).then(function (r) { return r.json(); }),
+            tideFetch
         ]).then(function (results) {
             var marine = results[0];
             var wind = results[1];
+            var tideResult = results[2];
 
             weatherData = {
                 marine: marine.hourly,
                 wind: wind.hourly,
                 times: marine.hourly.time,
+                tide: tideResult,
                 fetchedAt: Date.now()
             };
 
@@ -178,6 +185,7 @@ var OceanWeather = (function () {
             windY: windY,
             size: simSize,
             choppiness: choppiness,
+            tide: weatherData.tide || null,
             // Raw data for HUD display
             raw: {
                 waveHeight: waveHeight,
@@ -236,6 +244,155 @@ var OceanWeather = (function () {
             }
         }
         return BEAUFORT_SCALE[BEAUFORT_SCALE.length - 1];
+    }
+
+    // --- Tide Data (NOAA CO-OPS API) ---
+
+    var NOAA_STATIONS = [
+        { id: '9419750', lat: 41.7456, lng: -124.1844 },  // Crescent City
+        { id: '9418767', lat: 40.7667, lng: -124.2167 },  // North Spit (Eureka)
+        { id: '9416841', lat: 38.9133, lng: -123.7083 },  // Arena Cove
+        { id: '9415020', lat: 37.9961, lng: -122.9767 },  // Point Reyes
+        { id: '9414290', lat: 37.8067, lng: -122.4650 },  // San Francisco
+        { id: '9413450', lat: 36.6050, lng: -121.8883 },  // Monterey
+        { id: '9412110', lat: 35.1694, lng: -120.7542 },  // Port San Luis
+        { id: '9411340', lat: 34.4083, lng: -119.6850 },  // Santa Barbara
+        { id: '9410840', lat: 34.0083, lng: -118.5000 },  // Santa Monica
+        { id: '9410660', lat: 33.7200, lng: -118.2717 },  // Los Angeles
+        { id: '9410230', lat: 32.8669, lng: -117.2571 },  // La Jolla
+        { id: '9410170', lat: 32.7142, lng: -117.1736 },  // San Diego
+        { id: '1612340', lat: 21.3067, lng: -157.8670 },  // Honolulu
+        { id: '1617760', lat: 19.7314, lng: -155.0550 },  // Hilo
+    ];
+
+    var MAX_STATION_DISTANCE = 200; // km
+
+    function haversineDistance(lat1, lng1, lat2, lng2) {
+        var R = 6371;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLng = (lng2 - lng1) * Math.PI / 180;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function findNearestStation(lat, lng) {
+        var best = null;
+        var bestDist = Infinity;
+        for (var i = 0; i < NOAA_STATIONS.length; i++) {
+            var s = NOAA_STATIONS[i];
+            var d = haversineDistance(lat, lng, s.lat, s.lng);
+            if (d < bestDist) {
+                bestDist = d;
+                best = s;
+            }
+        }
+        return bestDist <= MAX_STATION_DISTANCE ? best : null;
+    }
+
+    function getNoaaDateStr() {
+        var d = new Date();
+        return d.getUTCFullYear() +
+            String(d.getUTCMonth() + 1).padStart(2, '0') +
+            String(d.getUTCDate()).padStart(2, '0');
+    }
+
+    function fetchTideData(station) {
+        var today = getNoaaDateStr();
+        var base = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter';
+        var common = '&station=' + station.id +
+            '&product=predictions&datum=MLLW&units=english' +
+            '&time_zone=gmt&format=json';
+
+        var hiloUrl = base + '?begin_date=' + today + '&range=36' + common + '&interval=hilo';
+        var hourlyUrl = base + '?begin_date=' + today + '&range=36' + common + '&interval=h';
+
+        return Promise.all([
+            fetch(hiloUrl).then(function (r) { return r.json(); }),
+            fetch(hourlyUrl).then(function (r) { return r.json(); })
+        ]).then(function (results) {
+            return processTideData(results[0], results[1]);
+        }).catch(function (err) {
+            console.warn('Tide fetch failed:', err);
+            return null;
+        });
+    }
+
+    function processTideData(hiloData, hourlyData) {
+        if (!hiloData || !hiloData.predictions || !hourlyData || !hourlyData.predictions) return null;
+
+        var now = Date.now();
+
+        // Parse hi/lo events
+        var events = hiloData.predictions.map(function (p) {
+            return {
+                time: new Date(p.t.replace(' ', 'T') + 'Z').getTime(),
+                value: parseFloat(p.v),
+                type: p.type
+            };
+        });
+
+        // Find surrounding events
+        var prev = null, next = null;
+        for (var i = 0; i < events.length; i++) {
+            if (events[i].time <= now) {
+                prev = events[i];
+            } else if (!next) {
+                next = events[i];
+            }
+        }
+
+        if (!prev || !next) return null;
+
+        // Interpolate current height from hourly data
+        var hourly = hourlyData.predictions;
+        var currentHeight = null;
+        for (var i = 0; i < hourly.length - 1; i++) {
+            var t0 = new Date(hourly[i].t.replace(' ', 'T') + 'Z').getTime();
+            var t1 = new Date(hourly[i + 1].t.replace(' ', 'T') + 'Z').getTime();
+            if (now >= t0 && now < t1) {
+                var frac = (now - t0) / (t1 - t0);
+                currentHeight = parseFloat(hourly[i].v) + (parseFloat(hourly[i + 1].v) - parseFloat(hourly[i].v)) * frac;
+                break;
+            }
+        }
+
+        if (currentHeight === null) {
+            currentHeight = parseFloat(hourly[hourly.length - 1].v);
+        }
+
+        // Progress through current cycle (0 = at prev event, 1 = at next event)
+        var progress = (now - prev.time) / (next.time - prev.time);
+        progress = Math.max(0, Math.min(1, progress));
+
+        var rising = next.type === 'H';
+
+        // State label
+        var state;
+        if (progress < 0.15) {
+            state = prev.type === 'H' ? 'High' : 'Low';
+        } else if (progress > 0.85) {
+            state = next.type === 'H' ? 'High' : 'Low';
+        } else {
+            state = rising ? 'Rising' : 'Falling';
+        }
+
+        return {
+            height: currentHeight,
+            state: state,
+            rising: rising,
+            progress: progress,
+            prevTime: prev.time,
+            nextTime: next.time,
+            prevType: prev.type,
+            nextType: next.type
+        };
+    }
+
+    function formatTideTime(utcMs) {
+        var d = new Date(utcMs);
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     }
 
     function mapRange(value, inMin, inMax, outMin, outMax) {
@@ -309,6 +466,7 @@ var OceanWeather = (function () {
         getHourlyData: getHourlyData,
         fetchForLocation: fetchForLocation,
         degreesToCompass: degreesToCompass,
+        formatTideTime: formatTideTime,
         LOCATIONS: LOCATIONS
     };
 })();

@@ -152,6 +152,7 @@
     }
 
     function severityColor(value, metric) {
+        if (metric === 'temp') return '#4C5E70';
         return SEVERITY_COLORS[getSeverity(value, metric)];
     }
 
@@ -189,6 +190,17 @@
         // Update bar charts
         var hourly = OceanWeather.getHourlyData();
         if (hourly) updateBars(hourly);
+
+        // Update tide card
+        if (data.tide) updateTideCard(data.tide);
+    }
+
+    function getTempLabel(tempF) {
+        if (tempF < 50) return 'Cold';
+        if (tempF < 60) return 'Cool';
+        if (tempF < 70) return 'Mild';
+        if (tempF < 80) return 'Warm';
+        return 'Hot';
     }
 
     function updateCards(r) {
@@ -196,6 +208,11 @@
         var windColor   = severityColor(r.windSpeedMph, 'wind');
         var swellColor  = severityColor(heightFt, 'height');
         var periodColor = severityColor(r.wavePeriod, 'period');
+
+        // Sea temp card
+        var tempF = r.seaSurfaceTemp * 9 / 5 + 32;
+        document.getElementById('card-temp-val').textContent = Math.round(tempF);
+        document.getElementById('card-temp-detail').textContent = getTempLabel(tempF);
 
         // Wind card
         document.getElementById('card-wind-val').textContent = Math.round(r.windSpeedMph);
@@ -219,6 +236,34 @@
 
     var cardColors = { wind: '#F3B139', swell: '#AFC3D5', period: '#AFC3D5' };
 
+    function updateTideCard(tide) {
+        if (!tide) return;
+
+        // Pill value
+        document.getElementById('card-tide-val').textContent = tide.height.toFixed(1);
+
+        // State label
+        document.getElementById('card-tide-state').textContent = tide.state;
+
+        // Time labels
+        document.getElementById('tide-time-top').textContent = OceanWeather.formatTideTime(tide.prevTime);
+        document.getElementById('tide-time-bottom').textContent = OceanWeather.formatTideTime(tide.nextTime);
+
+        // Dot position (8% to 92% range to keep dot within track)
+        var indicator = document.getElementById('tide-indicator');
+        var topPct = 8 + (tide.progress * 84);
+        indicator.style.top = topPct + '%';
+
+        // Rising/falling direction
+        if (tide.rising) {
+            indicator.classList.add('rising');
+            indicator.classList.remove('falling');
+        } else {
+            indicator.classList.add('falling');
+            indicator.classList.remove('rising');
+        }
+    }
+
     function getPeriodLabel(period) {
         if (period < 6) return 'Short';
         if (period < 10) return 'Medium';
@@ -230,6 +275,7 @@
     var BAR_COUNT = 6;
 
     function updateBars(hourly) {
+        renderBars('bars-temp',   hourly.seaSurfaceTemp, 'temp');
         renderBars('bars-wind',   hourly.windSpeed,  'wind');
         renderBars('bars-swell',  hourly.waveHeight, 'height');
         renderBars('bars-period', hourly.wavePeriod, 'period');
@@ -313,6 +359,12 @@
         document.getElementById('wave-period').textContent = '--';
         document.getElementById('wind-speed').textContent = '--';
         document.getElementById('wind-gust').textContent = '--';
+        document.getElementById('card-temp-val').textContent = '--';
+        document.getElementById('card-temp-detail').textContent = '--';
+        document.getElementById('card-tide-val').textContent = '--';
+        document.getElementById('card-tide-state').textContent = '--';
+        document.getElementById('tide-time-top').textContent = '--:--';
+        document.getElementById('tide-time-bottom').textContent = '--:--';
     }
 
     function setLocation(idx) {
