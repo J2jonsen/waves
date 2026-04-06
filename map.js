@@ -83,7 +83,7 @@
         if (name) params += '&name=' + encodeURIComponent(name);
         return '<div class="popup-name">' + (name || 'Ocean Point') + '</div>' +
                '<div class="popup-coords">' + coordsText + '</div>' +
-               '<a class="popup-link" href="index.html?' + params + '">View Waves →</a>';
+               '<a class="popup-link" href="./?'  + params + '">View Waves →</a>';
     }
 
     // --- Track state ---

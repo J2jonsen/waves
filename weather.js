@@ -16,21 +16,10 @@ var OceanWeather = (function () {
         return Math.min(Math.max(x, min), max);
     }
 
-    // Curated coastal locations
-    var LOCATIONS = [
-        { name: 'Santa Cruz, CA', lat: 36.96, lng: -122.02 },
-        { name: 'Pipeline, Oahu', lat: 21.66, lng: -158.05 },
-        { name: 'Nazare, Portugal', lat: 39.60, lng: -9.07 },
-        { name: 'Bondi Beach, Australia', lat: -33.89, lng: 151.27 },
-        { name: 'Hossegor, France', lat: 43.66, lng: -1.44 },
-        { name: 'Tofino, BC', lat: 49.15, lng: -125.91 },
-        { name: 'Mavericks, CA', lat: 37.49, lng: -122.50 },
-        { name: 'Jeffreys Bay, South Africa', lat: -34.05, lng: 25.53 },
-        { name: 'Uluwatu, Bali', lat: -8.81, lng: 115.09 },
-        { name: 'Teahupo\'o, Tahiti', lat: -17.87, lng: -149.26 },
-    ];
+    // Default location (used when no URL params provided)
+    var DEFAULT_LOCATION = { name: 'Santa Cruz, CA', lat: 36.96, lng: -122.02 };
 
-    var currentLocation = LOCATIONS[0];
+    var currentLocation = DEFAULT_LOCATION;
     var weatherData = null;
     var fetchTimer = null;
     var onDataCallback = null;
@@ -419,8 +408,8 @@ var OceanWeather = (function () {
         }, FETCH_INTERVAL);
     }
 
-    function getLocations() {
-        return LOCATIONS;
+    function getDefaultLocation() {
+        return DEFAULT_LOCATION;
     }
 
     function getCurrentLocation() {
@@ -460,13 +449,12 @@ var OceanWeather = (function () {
     return {
         init: init,
         setLocation: setLocation,
-        getLocations: getLocations,
+        getDefaultLocation: getDefaultLocation,
         getCurrentLocation: getCurrentLocation,
         getCurrentConditions: getCurrentConditions,
         getHourlyData: getHourlyData,
         fetchForLocation: fetchForLocation,
         degreesToCompass: degreesToCompass,
-        formatTideTime: formatTideTime,
-        LOCATIONS: LOCATIONS
+        formatTideTime: formatTideTime
     };
 })();

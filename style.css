@@ -145,8 +145,7 @@ canvas {
     width: 100%;
 }
 
-#location-map,
-#location-next {
+#location-map {
     background: none;
     border: none;
     color: white;
@@ -164,8 +163,7 @@ canvas {
     text-decoration: none;
 }
 
-#location-map:hover,
-#location-next:hover {
+#location-map:hover {
     opacity: 0.8;
 }
 

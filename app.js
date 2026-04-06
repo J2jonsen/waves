@@ -402,9 +402,6 @@
     OceanWeather.init(applyWeatherData);
 
     // --- Location picker ---
-    var locations = OceanWeather.getLocations();
-    var currentLocationIndex = 0;
-
     function clearHUD() {
         document.getElementById('condition-icon').innerHTML = '';
         document.getElementById('condition-text').textContent = '--';
@@ -424,35 +421,14 @@
         });
     }
 
-    function setLocation(idx) {
-        currentLocationIndex = idx;
-        var loc = locations[idx];
+    function loadLocation(loc) {
         document.getElementById('location-name').textContent = loc.name;
         document.getElementById('location-coords').textContent = 'Near Coastal';
         clearHUD();
         OceanWeather.setLocation(loc);
     }
 
-    function setCustomLocation(loc) {
-        currentLocationIndex = -1;
-        document.getElementById('location-name').textContent = loc.name;
-        document.getElementById('location-coords').textContent = 'Near Coastal';
-        clearHUD();
-        OceanWeather.setLocation(loc);
-    }
-
-    document.getElementById('location-next').addEventListener('click', function () {
-        // If on a custom map location, reset to first preset
-        if (currentLocationIndex < 0) {
-            // Clear URL params
-            history.replaceState(null, '', window.location.pathname);
-            setLocation(0);
-        } else {
-            setLocation((currentLocationIndex + 1) % locations.length);
-        }
-    });
-
-    // --- Check for URL params from map page ---
+    // --- Determine location from URL params or default ---
     var urlParams = new URLSearchParams(window.location.search);
     var paramLat = urlParams.get('lat');
     var paramLng = urlParams.get('lng');
@@ -464,9 +440,9 @@
         if (!name) {
             name = lat.toFixed(3) + ', ' + lng.toFixed(3);
         }
-        setCustomLocation({ name: name, lat: lat, lng: lng });
+        loadLocation({ name: name, lat: lat, lng: lng });
     } else {
-        setLocation(0);
+        loadLocation(OceanWeather.getDefaultLocation());
     }
 
     // --- Card scroll-in animations ---
