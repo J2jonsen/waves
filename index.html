@@ -46,7 +46,10 @@
         <!-- Hero: 100vh transparent spacer over the animation -->
         <section id="hero">
             <div id="hero-bottom">
-                <div id="weather-condition">--</div>
+                <div id="weather-condition">
+                    <span id="condition-icon"></span>
+                    <span id="condition-text">--</span>
+                </div>
                 <div id="sea-state-label" class="hero-sea-state">--</div>
                 <div id="hud-stats">
                     <div class="hud-stat">
@@ -92,7 +95,10 @@
                 <div class="card-info">
                     <div class="card-info-label">SEA TEMP</div>
                     <div class="card-info-detail" id="card-temp-detail">--</div>
-                    <div class="card-bars" id="bars-temp"></div>
+                    <div class="card-chart-row">
+                        <div class="card-bars" id="bars-temp"></div>
+                        <div class="card-trend" id="trend-temp"></div>
+                    </div>
                 </div>
             </div>
 
@@ -104,7 +110,10 @@
                 <div class="card-info">
                     <div class="card-info-label">WIND</div>
                     <div class="card-info-detail" id="card-wind-dir">--</div>
-                    <div class="card-bars" id="bars-wind"></div>
+                    <div class="card-chart-row">
+                        <div class="card-bars" id="bars-wind"></div>
+                        <div class="card-trend" id="trend-wind"></div>
+                    </div>
                 </div>
             </div>
 
@@ -116,7 +125,10 @@
                 <div class="card-info">
                     <div class="card-info-label">SWELL</div>
                     <div class="card-info-detail" id="card-swell-dir">--</div>
-                    <div class="card-bars" id="bars-swell"></div>
+                    <div class="card-chart-row">
+                        <div class="card-bars" id="bars-swell"></div>
+                        <div class="card-trend" id="trend-swell"></div>
+                    </div>
                 </div>
             </div>
 
@@ -128,7 +140,10 @@
                 <div class="card-info">
                     <div class="card-info-label">PERIOD</div>
                     <div class="card-info-detail" id="card-period-detail">--</div>
-                    <div class="card-bars" id="bars-period"></div>
+                    <div class="card-chart-row">
+                        <div class="card-bars" id="bars-period"></div>
+                        <div class="card-trend" id="trend-period"></div>
+                    </div>
                 </div>
             </div>
 

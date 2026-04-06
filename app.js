@@ -134,6 +134,67 @@
     // --- Weather integration ---
     var pauseWeather = false;
 
+    // --- Weather condition icons ---
+    var WEATHER_ICON_PATHS = {
+        sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/>',
+        'cloud-sun': '<path d="M10 2v2m-5.07.93l1.41 1.41M2 10h2"/><circle cx="10" cy="8" r="4"/><path d="M18 12h-1.26A8 8 0 0 0 4.2 12.05 6 6 0 1 0 8 22h10a5 5 0 0 0 0-10z"/>',
+        cloud: '<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>',
+        fog: '<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><path d="M6 22h12" opacity="0.4"/><path d="M8 24h8" opacity="0.3"/>',
+        rain: '<path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/><path d="M8 19v2m4-4v2m4-4v2"/>',
+        snow: '<path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><circle cx="8" cy="20" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="20" r="1" fill="currentColor" stroke="none"/>',
+        storm: '<path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><polyline points="13 11 9 17 15 17 11 23"/>'
+    };
+
+    function weatherIconSVG(type) {
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+            (WEATHER_ICON_PATHS[type] || WEATHER_ICON_PATHS.sun) + '</svg>';
+    }
+
+    function getConditionIcon(condition) {
+        if (/thunder/i.test(condition)) return weatherIconSVG('storm');
+        if (/snow/i.test(condition)) return weatherIconSVG('snow');
+        if (/rain|drizzle|shower/i.test(condition)) return weatherIconSVG('rain');
+        if (/fog/i.test(condition)) return weatherIconSVG('fog');
+        if (/overcast/i.test(condition)) return weatherIconSVG('cloud');
+        if (/partly/i.test(condition)) return weatherIconSVG('cloud-sun');
+        return weatherIconSVG('sun');
+    }
+
+    // --- Trend arrows ---
+    var TREND_ARROW_UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
+    var TREND_ARROW_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/></svg>';
+
+    function updateTrends(hourly) {
+        updateTrendCard('trend-temp', hourly.seaSurfaceTemp, hourly.currentIndex, '°F', 0.5);
+        updateTrendCard('trend-wind', hourly.windSpeed, hourly.currentIndex, ' mph', 0.5);
+        updateTrendCard('trend-swell', hourly.waveHeight, hourly.currentIndex, ' ft', 0.2);
+        updateTrendCard('trend-period', hourly.wavePeriod, hourly.currentIndex, 's', 0.5);
+    }
+
+    function updateTrendCard(id, data, idx, unit, threshold) {
+        var el = document.getElementById(id);
+        if (!el || !data || idx < 0) return;
+
+        var futureIdx = data.length - 1;
+        var current = data[idx];
+        var future = data[futureIdx];
+        if (current == null || future == null || isNaN(current) || isNaN(future)) {
+            el.innerHTML = '';
+            return;
+        }
+
+        var delta = future - current;
+        var abs = Math.abs(delta);
+        if (abs < threshold) {
+            el.innerHTML = '';
+            return;
+        }
+
+        var formatted = abs < 10 ? abs.toFixed(1) : Math.round(abs);
+        el.innerHTML = (delta > 0 ? TREND_ARROW_UP : TREND_ARROW_DOWN) +
+            '<span class="trend-delta">' + formatted + unit + '</span>';
+    }
+
     // --- Severity system ---
     var SEVERITY_COLORS = {
         low:    '#AFC3D5',
@@ -160,8 +221,9 @@
         if (!data || !data.raw) return;
         var r = data.raw;
 
-        // Weather condition + sea state
-        document.getElementById('weather-condition').textContent = r.weatherCondition;
+        // Weather condition icon + text
+        document.getElementById('condition-icon').innerHTML = getConditionIcon(r.weatherCondition);
+        document.getElementById('condition-text').textContent = r.weatherCondition;
         document.getElementById('sea-state-label').textContent = r.beaufort.description;
 
         // HUD stats + accent bar colors
@@ -187,9 +249,12 @@
         // Update cards
         updateCards(r);
 
-        // Update bar charts
+        // Update bar charts + trends
         var hourly = OceanWeather.getHourlyData();
-        if (hourly) updateBars(hourly);
+        if (hourly) {
+            updateBars(hourly);
+            updateTrends(hourly);
+        }
 
         // Update tide card
         if (data.tide) updateTideCard(data.tide);
@@ -305,18 +370,6 @@
         var barRow = container.querySelector('.bar-row');
         if (!barRow || barRow.children.length !== BAR_COUNT) {
             container.innerHTML = '';
-            var labelsRow = document.createElement('div');
-            labelsRow.className = 'bar-labels';
-            var labelNow = document.createElement('span');
-            labelNow.className = 'bar-label';
-            labelNow.textContent = 'now';
-            var labelEnd = document.createElement('span');
-            labelEnd.className = 'bar-label';
-            labelEnd.textContent = '+24hr';
-            labelsRow.appendChild(labelNow);
-            labelsRow.appendChild(labelEnd);
-            container.appendChild(labelsRow);
-
             barRow = document.createElement('div');
             barRow.className = 'bar-row';
             for (var i = 0; i < BAR_COUNT; i++) {
@@ -353,7 +406,8 @@
     var currentLocationIndex = 0;
 
     function clearHUD() {
-        document.getElementById('weather-condition').textContent = '--';
+        document.getElementById('condition-icon').innerHTML = '';
+        document.getElementById('condition-text').textContent = '--';
         document.getElementById('sea-state-label').textContent = '--';
         document.getElementById('wave-height').textContent = '--';
         document.getElementById('wave-period').textContent = '--';
@@ -365,6 +419,9 @@
         document.getElementById('card-tide-state').textContent = '--';
         document.getElementById('tide-time-top').textContent = '--:--';
         document.getElementById('tide-time-bottom').textContent = '--:--';
+        ['trend-temp', 'trend-wind', 'trend-swell', 'trend-period'].forEach(function (id) {
+            document.getElementById(id).innerHTML = '';
+        });
     }
 
     function setLocation(idx) {
