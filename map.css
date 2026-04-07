@@ -158,6 +158,30 @@ body {
     background: rgba(255, 255, 255, 0.18);
 }
 
+/* ==================== SWELL LOADING ==================== */
+.swell-loading {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(8, 20, 40, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: rgba(255, 255, 255, 0.6);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    z-index: 10;
+    transition: opacity 0.5s;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.swell-loading.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* ==================== RESPONSIVE ==================== */
 @media (min-width: 768px) {
     .marker-harbor {

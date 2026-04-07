@@ -207,4 +207,7 @@
         });
     });
 
+    // Expose map for swell overlay
+    window.__wavesMap = map;
+
 })();

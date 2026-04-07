@@ -175,7 +175,7 @@
         var el = document.getElementById(id);
         if (!el || !data || idx < 0) return;
 
-        var futureIdx = data.length - 1;
+        var futureIdx = Math.min(idx + 23, data.length - 1);
         var current = data[idx];
         var future = data[futureIdx];
         if (current == null || future == null || isNaN(current) || isNaN(future)) {
@@ -254,6 +254,7 @@
         if (hourly) {
             updateBars(hourly);
             updateTrends(hourly);
+            renderForecast(hourly);
         }
 
         // Update tide card
@@ -350,12 +351,15 @@
         var container = document.getElementById(containerId);
         if (!container || !data || data.length === 0) return;
 
+        // Only use first 24 hours for spark charts (data may be 72h now)
+        var sparks = data.length > 24 ? data.slice(0, 24) : data;
+
         // Sample BAR_COUNT evenly-spaced points from the data
-        var n = data.length;
+        var n = sparks.length;
         var samples = [];
         for (var i = 0; i < BAR_COUNT; i++) {
             var idx = Math.round(i * (n - 1) / (BAR_COUNT - 1));
-            var v = data[idx];
+            var v = sparks[idx];
             samples.push(v == null || isNaN(v) ? 0 : v);
         }
 
@@ -388,6 +392,249 @@
             barRow.children[i].style.background = severityColor(samples[i], metric);
         }
     }
+
+    // --- Forecast carousel ---
+    var FORECAST_CONFIGS = [
+        { id: 'forecast-temp', cardId: 'card-temp', dataKey: 'seaSurfaceTemp', metric: 'temp', label: 'SEA TEMP', unit: '°F', dirKey: null },
+        { id: 'forecast-wind', cardId: 'card-wind', dataKey: 'windSpeed', metric: 'wind', label: 'WIND', unit: ' MPH', dirKey: 'windDirection' },
+        { id: 'forecast-swell', cardId: 'card-swell', dataKey: 'waveHeight', metric: 'height', label: 'SWELL', unit: ' FT', dirKey: 'waveDirection' },
+        { id: 'forecast-period', cardId: 'card-period', dataKey: 'wavePeriod', metric: 'period', label: 'PERIOD', unit: 'S', dirKey: null }
+    ];
+
+    function getDayLabel(unixTime, index, currentIndex) {
+        if (index === currentIndex) return 'Now';
+        var d = new Date(unixTime * 1000);
+        var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return days[d.getDay()];
+    }
+
+    function renderForecast(hourly) {
+        if (!hourly || !hourly.times || hourly.times.length === 0) return;
+
+        var times = hourly.times;
+        var currentIdx = hourly.currentIndex;
+
+        FORECAST_CONFIGS.forEach(function (cfg) {
+            var container = document.getElementById(cfg.id);
+            if (!container) return;
+
+            var data = hourly[cfg.dataKey];
+            if (!data || data.length === 0) return;
+
+            // Current values for header
+            var currentVal = data[currentIdx] != null ? data[currentIdx] : 0;
+            var dirDeg = cfg.dirKey && hourly[cfg.dirKey] ? hourly[cfg.dirKey][currentIdx] : null;
+            var dirText = dirDeg != null ? OceanWeather.degreesToCompass(dirDeg) : '';
+            var color = severityColor(currentVal, cfg.metric);
+
+            // Format current value
+            var displayVal;
+            if (cfg.metric === 'temp') {
+                displayVal = Math.round(currentVal);
+            } else if (cfg.metric === 'height') {
+                displayVal = currentVal.toFixed(1);
+            } else {
+                displayVal = Math.round(currentVal);
+            }
+
+            // Current time
+            var now = new Date();
+            var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+            // Build header
+            var headerHTML = '<div class="forecast-header">' +
+                '<div class="forecast-header-left">' +
+                    '<span class="forecast-label">' + cfg.label + '</span>' +
+                    '<span class="forecast-direction">' + (dirText || (cfg.metric === 'temp' ? getTempLabel(currentVal) : getPeriodLabel(currentVal))) + '</span>' +
+                '</div>' +
+                '<div class="forecast-header-right">' +
+                    '<span class="forecast-time">' + timeStr + '</span>' +
+                    '<div class="forecast-pill" style="background:' + color + '">' + displayVal + cfg.unit + '</div>' +
+                '</div>' +
+            '</div>';
+
+            // Build bars — use all data from currentIndex onward (up to 72h)
+            var barData = data.slice(currentIdx);
+            var barTimes = times.slice(currentIdx);
+
+            // Find max for scaling
+            var max = 0;
+            for (var i = 0; i < barData.length; i++) {
+                var v = barData[i];
+                if (v != null && !isNaN(v) && v > max) max = v;
+            }
+            if (max === 0) max = 1;
+
+            var barsHTML = '<div class="forecast-bars">';
+            for (var i = 0; i < barData.length; i++) {
+                var v = barData[i] != null && !isNaN(barData[i]) ? barData[i] : 0;
+                var pct = (v / max) * 100;
+                pct = Math.max(pct, 6);
+                var barColor = severityColor(v, cfg.metric);
+                var isNow = i === 0 ? ' is-now' : '';
+                barsHTML += '<div class="forecast-bar' + isNow + '" style="height:' + pct + '%;background:' + barColor + '"></div>';
+            }
+            barsHTML += '</div>';
+
+            // Time labels — "Now" + day boundaries
+            var labels = [];
+            labels.push({ pos: 0, text: 'Now' });
+            var lastDay = new Date(barTimes[0] * 1000).getDay();
+            for (var i = 1; i < barTimes.length; i++) {
+                var d = new Date(barTimes[i] * 1000);
+                if (d.getDay() !== lastDay && d.getHours() === 0) {
+                    var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    labels.push({ pos: i, text: days[d.getDay()] });
+                    lastDay = d.getDay();
+                }
+            }
+
+            var labelsHTML = '<div class="forecast-time-labels">';
+            // Place labels using flex with spacer approach
+            var totalBars = barData.length;
+            for (var i = 0; i < labels.length; i++) {
+                var leftPct = (labels[i].pos / (totalBars - 1)) * 100;
+                labelsHTML += '<span class="forecast-time-label" style="position:absolute;left:' + leftPct + '%">' + labels[i].text + '</span>';
+            }
+            labelsHTML += '</div>';
+
+            container.innerHTML = headerHTML +
+                '<div class="forecast-bars-wrap">' + barsHTML +
+                '<div style="position:relative;height:20px">' + labelsHTML + '</div></div>';
+        });
+    }
+
+    // --- Swipe handling for card carousels ---
+    function initCardSwipe() {
+        var cards = document.querySelectorAll('.data-card');
+        cards.forEach(function (card) {
+            var carousel = card.querySelector('.card-carousel');
+            if (!carousel) return;
+
+            var startX = 0;
+            var startY = 0;
+            var isDragging = false;
+            var isHorizontal = null;
+            var currentOffset = 0;
+            var isForecast = false;
+            var cardWidth = 0;
+
+            carousel.addEventListener('touchstart', function (e) {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isDragging = true;
+                isHorizontal = null;
+                cardWidth = card.offsetWidth;
+                carousel.style.transition = 'none';
+            }, { passive: true });
+
+            carousel.addEventListener('touchmove', function (e) {
+                if (!isDragging) return;
+
+                var dx = e.touches[0].clientX - startX;
+                var dy = e.touches[0].clientY - startY;
+
+                // Determine direction on first significant move
+                if (isHorizontal === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+                    isHorizontal = Math.abs(dx) > Math.abs(dy);
+                }
+
+                if (!isHorizontal) {
+                    isDragging = false;
+                    return;
+                }
+
+                e.preventDefault();
+
+                var baseOffset = isForecast ? -cardWidth : 0;
+                var offset = baseOffset + dx;
+                // Clamp
+                offset = Math.max(-cardWidth, Math.min(0, offset));
+                carousel.style.transform = 'translateX(' + offset + 'px)';
+                currentOffset = dx;
+            }, { passive: false });
+
+            carousel.addEventListener('touchend', function () {
+                if (!isDragging || isHorizontal === null) {
+                    isDragging = false;
+                    carousel.style.transition = '';
+                    return;
+                }
+                isDragging = false;
+
+                var threshold = cardWidth * 0.2;
+                carousel.style.transition = '';
+
+                if (!isForecast && currentOffset < -threshold) {
+                    // Swipe left → show forecast
+                    carousel.classList.add('showing-forecast');
+                    isForecast = true;
+                } else if (isForecast && currentOffset > threshold) {
+                    // Swipe right → show current
+                    carousel.classList.remove('showing-forecast');
+                    isForecast = false;
+                } else {
+                    // Snap back
+                    if (isForecast) {
+                        carousel.classList.add('showing-forecast');
+                    } else {
+                        carousel.classList.remove('showing-forecast');
+                    }
+                }
+
+                carousel.style.transform = '';
+                currentOffset = 0;
+            });
+
+            // Mouse drag support for desktop
+            carousel.addEventListener('mousedown', function (e) {
+                startX = e.clientX;
+                isDragging = true;
+                isHorizontal = true;
+                cardWidth = card.offsetWidth;
+                carousel.style.transition = 'none';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function (e) {
+                if (!isDragging || !isHorizontal) return;
+
+                var dx = e.clientX - startX;
+                var baseOffset = isForecast ? -cardWidth : 0;
+                var offset = baseOffset + dx;
+                offset = Math.max(-cardWidth, Math.min(0, offset));
+                carousel.style.transform = 'translateX(' + offset + 'px)';
+                currentOffset = dx;
+            });
+
+            document.addEventListener('mouseup', function () {
+                if (!isDragging) return;
+                isDragging = false;
+
+                var threshold = cardWidth * 0.2;
+                carousel.style.transition = '';
+
+                if (!isForecast && currentOffset < -threshold) {
+                    carousel.classList.add('showing-forecast');
+                    isForecast = true;
+                } else if (isForecast && currentOffset > threshold) {
+                    carousel.classList.remove('showing-forecast');
+                    isForecast = false;
+                } else {
+                    if (isForecast) {
+                        carousel.classList.add('showing-forecast');
+                    } else {
+                        carousel.classList.remove('showing-forecast');
+                    }
+                }
+
+                carousel.style.transform = '';
+                currentOffset = 0;
+            });
+        });
+    }
+
+    initCardSwipe();
 
     function applyWeatherData(data) {
         if (!data) return;

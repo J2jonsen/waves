@@ -34,13 +34,13 @@ var OceanWeather = (function () {
             'wind_wave_height,wind_wave_period,' +
             'swell_wave_height,swell_wave_period,' +
             'sea_surface_temperature' +
-            '&forecast_days=1&timeformat=unixtime';
+            '&forecast_days=3&timeformat=unixtime';
 
         var windUrl = 'https://api.open-meteo.com/v1/forecast' +
             '?latitude=' + location.lat +
             '&longitude=' + location.lng +
             '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code' +
-            '&forecast_days=1&timeformat=unixtime';
+            '&forecast_days=3&timeformat=unixtime';
 
         // Find nearest NOAA station for tide data
         var tideStation = findNearestStation(location.lat, location.lng);
@@ -54,6 +54,10 @@ var OceanWeather = (function () {
             var marine = results[0];
             var wind = results[1];
             var tideResult = results[2];
+
+            if (!marine.hourly || !wind.hourly) {
+                throw new Error(marine.reason || wind.reason || 'API returned no data');
+            }
 
             weatherData = {
                 marine: marine.hourly,
@@ -437,6 +441,7 @@ var OceanWeather = (function () {
         var idx = getCurrentHourIndex();
         return {
             currentIndex: idx,
+            times: weatherData.times || [],
             windSpeed: (weatherData.wind.wind_speed_10m || []).map(function (v) { return (v || 0) / 3.6 * 2.237; }), // mph
             waveHeight: (weatherData.marine.wave_height || []).map(function (v) { return (v || 0) * 3.281; }), // ft
             wavePeriod: weatherData.marine.wave_period || [],

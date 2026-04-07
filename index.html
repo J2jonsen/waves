@@ -85,62 +85,82 @@
         <div id="cards-bg">
         <section id="cards-section">
             <div class="data-card" id="card-temp" style="--delay: 0">
-                <div class="card-pill pill-temp">
-                    <span class="pill-value" id="card-temp-val">--</span>
-                    <span class="pill-unit">&deg;F</span>
-                </div>
-                <div class="card-info">
-                    <div class="card-info-label">SEA TEMP</div>
-                    <div class="card-info-detail" id="card-temp-detail">--</div>
-                    <div class="card-chart-row">
-                        <div class="card-bars" id="bars-temp"></div>
-                        <div class="card-trend" id="trend-temp"></div>
+                <div class="card-carousel">
+                    <div class="card-slide card-current">
+                        <div class="card-pill pill-temp">
+                            <span class="pill-value" id="card-temp-val">--</span>
+                            <span class="pill-unit">&deg;F</span>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-info-label">SEA TEMP</div>
+                            <div class="card-info-detail" id="card-temp-detail">--</div>
+                            <div class="card-chart-row">
+                                <div class="card-bars" id="bars-temp"></div>
+                                <div class="card-trend" id="trend-temp"></div>
+                            </div>
+                        </div>
                     </div>
+                    <div class="card-slide card-forecast" id="forecast-temp"></div>
                 </div>
             </div>
 
             <div class="data-card" id="card-wind" style="--delay: 1">
-                <div class="card-pill pill-wind">
-                    <span class="pill-value" id="card-wind-val">--</span>
-                    <span class="pill-unit">MPH</span>
-                </div>
-                <div class="card-info">
-                    <div class="card-info-label">WIND</div>
-                    <div class="card-info-detail" id="card-wind-dir">--</div>
-                    <div class="card-chart-row">
-                        <div class="card-bars" id="bars-wind"></div>
-                        <div class="card-trend" id="trend-wind"></div>
+                <div class="card-carousel">
+                    <div class="card-slide card-current">
+                        <div class="card-pill pill-wind">
+                            <span class="pill-value" id="card-wind-val">--</span>
+                            <span class="pill-unit">MPH</span>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-info-label">WIND</div>
+                            <div class="card-info-detail" id="card-wind-dir">--</div>
+                            <div class="card-chart-row">
+                                <div class="card-bars" id="bars-wind"></div>
+                                <div class="card-trend" id="trend-wind"></div>
+                            </div>
+                        </div>
                     </div>
+                    <div class="card-slide card-forecast" id="forecast-wind"></div>
                 </div>
             </div>
 
             <div class="data-card" id="card-swell" style="--delay: 2">
-                <div class="card-pill pill-swell">
-                    <span class="pill-value" id="card-swell-val">--</span>
-                    <span class="pill-unit">FT</span>
-                </div>
-                <div class="card-info">
-                    <div class="card-info-label">SWELL</div>
-                    <div class="card-info-detail" id="card-swell-dir">--</div>
-                    <div class="card-chart-row">
-                        <div class="card-bars" id="bars-swell"></div>
-                        <div class="card-trend" id="trend-swell"></div>
+                <div class="card-carousel">
+                    <div class="card-slide card-current">
+                        <div class="card-pill pill-swell">
+                            <span class="pill-value" id="card-swell-val">--</span>
+                            <span class="pill-unit">FT</span>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-info-label">SWELL</div>
+                            <div class="card-info-detail" id="card-swell-dir">--</div>
+                            <div class="card-chart-row">
+                                <div class="card-bars" id="bars-swell"></div>
+                                <div class="card-trend" id="trend-swell"></div>
+                            </div>
+                        </div>
                     </div>
+                    <div class="card-slide card-forecast" id="forecast-swell"></div>
                 </div>
             </div>
 
             <div class="data-card" id="card-period" style="--delay: 3">
-                <div class="card-pill pill-period">
-                    <span class="pill-value" id="card-period-val">--</span>
-                    <span class="pill-unit">S</span>
-                </div>
-                <div class="card-info">
-                    <div class="card-info-label">PERIOD</div>
-                    <div class="card-info-detail" id="card-period-detail">--</div>
-                    <div class="card-chart-row">
-                        <div class="card-bars" id="bars-period"></div>
-                        <div class="card-trend" id="trend-period"></div>
+                <div class="card-carousel">
+                    <div class="card-slide card-current">
+                        <div class="card-pill pill-period">
+                            <span class="pill-value" id="card-period-val">--</span>
+                            <span class="pill-unit">S</span>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-info-label">PERIOD</div>
+                            <div class="card-info-detail" id="card-period-detail">--</div>
+                            <div class="card-chart-row">
+                                <div class="card-bars" id="bars-period"></div>
+                                <div class="card-trend" id="trend-period"></div>
+                            </div>
+                        </div>
                     </div>
+                    <div class="card-slide card-forecast" id="forecast-period"></div>
                 </div>
             </div>
 

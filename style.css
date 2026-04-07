@@ -350,8 +350,6 @@ canvas {
 /* Data card */
 .data-card {
     display: flex;
-    align-items: center;
-    gap: 16px;
     background: var(--card-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -411,9 +409,15 @@ canvas {
     background: var(--temp-blue);
 }
 
-/* Card layout: info left, pill right */
+/* Card layout: carousel fills card, tide card keeps row-reverse */
 .data-card {
+    flex-direction: column;
+}
+
+#card-tide {
     flex-direction: row-reverse;
+    align-items: center;
+    gap: 16px;
 }
 
 .card-info {
@@ -513,6 +517,170 @@ canvas {
     font-weight: 500;
     color: var(--white);
     line-height: 1;
+}
+
+/* ==================== CARD CAROUSEL ==================== */
+.card-carousel {
+    display: flex;
+    width: 200%;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-carousel.showing-forecast {
+    transform: translateX(-50%);
+}
+
+.card-slide {
+    width: 50%;
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.card-current {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-direction: row-reverse;
+}
+
+/* ==================== FORECAST VIEW ==================== */
+.card-forecast {
+    display: flex;
+    flex-direction: column;
+    padding: 2px 0 0 16px;
+}
+
+.forecast-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.forecast-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.forecast-label {
+    font-family: var(--font-body);
+    font-size: var(--text-sm-label);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--grey);
+}
+
+.forecast-direction {
+    font-family: var(--font-heading);
+    font-size: var(--text-h4);
+    font-weight: 700;
+    color: var(--white);
+}
+
+.forecast-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.forecast-time {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey);
+    font-variant-numeric: tabular-nums;
+}
+
+.forecast-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-family: var(--font-heading);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+    white-space: nowrap;
+}
+
+.forecast-bars-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+}
+
+.forecast-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 60px;
+    overflow: hidden;
+}
+
+.forecast-bar {
+    flex: 1;
+    min-width: 0;
+    border-radius: 2px;
+    min-height: 4px;
+    transition: height 0.3s ease;
+    position: relative;
+}
+
+.forecast-bar.is-now {
+    border-radius: 2px 2px 2px 2px;
+}
+
+.forecast-bar.is-now::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--white);
+}
+
+.forecast-time-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+}
+
+.forecast-time-label {
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.3px;
+}
+
+.forecast-time-label:first-child {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Swipe hint dot indicators */
+.card-dots {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    padding-top: 8px;
+}
+
+.card-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: background 0.2s;
+}
+
+.card-dot.active {
+    background: rgba(255, 255, 255, 0.6);
 }
 
 /* Bar colors set dynamically via JS severity system */
@@ -801,14 +969,14 @@ canvas {
         gap: 18px;
     }
 
-    .data-card {
-        gap: var(--card-gap);
-    }
-
     .card-pill {
         width: 226px;
         height: 165px;
         gap: 18px;
+    }
+
+    .card-current {
+        gap: var(--card-gap);
     }
 
     .card-bar {
@@ -818,6 +986,10 @@ canvas {
     .bar-row {
         height: 60px;
         gap: 7px;
+    }
+
+    .forecast-bars {
+        height: 80px;
     }
 
     .card-bars {
