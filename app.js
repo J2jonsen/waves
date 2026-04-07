@@ -305,29 +305,336 @@
     function updateTideCard(tide) {
         if (!tide) return;
 
-        // Pill value
-        document.getElementById('card-tide-val').textContent = tide.height.toFixed(1);
+        // Update header
+        document.getElementById('tide-state').textContent = tide.state;
+        document.getElementById('tide-val').textContent = tide.height.toFixed(1);
+        document.getElementById('tide-time').textContent = formatTideAMPM(Date.now());
 
-        // State label
-        document.getElementById('card-tide-state').textContent = tide.state;
+        // Render curve
+        renderTideCurve(tide);
+    }
 
-        // Time labels
-        document.getElementById('tide-time-top').textContent = OceanWeather.formatTideTime(tide.prevTime);
-        document.getElementById('tide-time-bottom').textContent = OceanWeather.formatTideTime(tide.nextTime);
+    // --- Tide curve SVG rendering ---
+    function formatTideAMPM(ms) {
+        var d = new Date(ms);
+        var h = d.getHours();
+        var m = d.getMinutes();
+        var ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        if (h === 0) h = 12;
+        return h + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+    }
 
-        // Dot position (8% to 92% range to keep dot within track)
-        var indicator = document.getElementById('tide-indicator');
-        var topPct = 8 + (tide.progress * 84);
-        indicator.style.top = topPct + '%';
-
-        // Rising/falling direction
-        if (tide.rising) {
-            indicator.classList.add('rising');
-            indicator.classList.remove('falling');
-        } else {
-            indicator.classList.add('falling');
-            indicator.classList.remove('rising');
+    function catmullRomPath(points) {
+        if (points.length < 2) return '';
+        var d = 'M' + points[0].x.toFixed(1) + ',' + points[0].y.toFixed(1);
+        for (var i = 0; i < points.length - 1; i++) {
+            var p0 = points[Math.max(0, i - 1)];
+            var p1 = points[i];
+            var p2 = points[i + 1];
+            var p3 = points[Math.min(points.length - 1, i + 2)];
+            var cp1x = p1.x + (p2.x - p0.x) / 6;
+            var cp1y = p1.y + (p2.y - p0.y) / 6;
+            var cp2x = p2.x - (p3.x - p1.x) / 6;
+            var cp2y = p2.y - (p3.y - p1.y) / 6;
+            d += ' C' + cp1x.toFixed(1) + ',' + cp1y.toFixed(1) + ' ' +
+                cp2x.toFixed(1) + ',' + cp2y.toFixed(1) + ' ' +
+                p2.x.toFixed(1) + ',' + p2.y.toFixed(1);
         }
+        return d;
+    }
+
+    // Sample a Catmull-Rom spline densely for y-lookup by x
+    function sampleCatmullRom(points, numSamples) {
+        var samples = [];
+        var segs = points.length - 1;
+        var stepsPerSeg = Math.ceil(numSamples / segs);
+        for (var i = 0; i < segs; i++) {
+            var p0 = points[Math.max(0, i - 1)];
+            var p1 = points[i];
+            var p2 = points[i + 1];
+            var p3 = points[Math.min(points.length - 1, i + 2)];
+            var limit = (i === segs - 1) ? stepsPerSeg + 1 : stepsPerSeg;
+            for (var s = 0; s < limit; s++) {
+                var t = s / stepsPerSeg;
+                var t2 = t * t, t3 = t2 * t;
+                var x = 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+                var y = 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+                samples.push({ x: x, y: y });
+            }
+        }
+        return samples;
+    }
+
+    // Lookup y on the sampled curve for a given x
+    function curveYAtX(samples, x) {
+        if (x <= samples[0].x) return samples[0].y;
+        if (x >= samples[samples.length - 1].x) return samples[samples.length - 1].y;
+        for (var i = 0; i < samples.length - 1; i++) {
+            if (x >= samples[i].x && x <= samples[i + 1].x) {
+                var f = (x - samples[i].x) / (samples[i + 1].x - samples[i].x);
+                return samples[i].y + f * (samples[i + 1].y - samples[i].y);
+            }
+        }
+        return samples[0].y;
+    }
+
+    function renderTideCurve(tide) {
+        var container = document.getElementById('tide-curve');
+        if (!container || !tide.hourlyPredictions || tide.hourlyPredictions.length < 2) return;
+
+        var hourly = tide.hourlyPredictions;
+        var allEvents = tide.events || [];
+
+        // Always show exactly 4 events
+        var events = allEvents.slice(0, 4);
+        if (events.length < 2) return;
+        var n = events.length;
+
+        var cRect = container.getBoundingClientRect();
+        var W = Math.round(cRect.width) || 400;
+        var H = Math.round(cRect.height) || 90;
+        var padTop = Math.round(H * 0.28), padBot = Math.round(H * 0.25);
+
+        // Value range from events
+        var vMin = Infinity, vMax = -Infinity;
+        for (var i = 0; i < n; i++) {
+            if (events[i].value < vMin) vMin = events[i].value;
+            if (events[i].value > vMax) vMax = events[i].value;
+        }
+        var vPad = (vMax - vMin) * 0.2 || 0.5;
+        vMin -= vPad;
+        vMax += vPad;
+
+        function my(v) { return padTop + ((vMax - v) / (vMax - vMin)) * (H - padTop - padBot); }
+
+        // Evenly space events across full width
+        var margin = W * 0.1;
+        var evX = [];
+        for (var i = 0; i < n; i++) {
+            evX.push(margin + i * (W - 2 * margin) / (n - 1));
+        }
+
+        // Build curve control points: left edge + events + right edge
+        // Edge points trend toward the opposite tide type for realistic trajectory
+        var curvePts = [];
+        // Left edge — the previous off-screen event is the opposite type of events[0]
+        // so trend from the direction of events[1] (which IS the opposite type)
+        var leftVal = events[0].value + (events[1].value - events[0].value) * 0.4;
+        curvePts.push({ x: 0, y: my(leftVal) });
+        // Event points
+        for (var i = 0; i < n; i++) {
+            curvePts.push({ x: evX[i], y: my(events[i].value) });
+        }
+        // Right edge — the next off-screen event is the opposite type of events[n-1]
+        // so trend toward the direction of events[n-2] (which IS the opposite type)
+        var rightVal = events[n - 1].value + (events[n - 2].value - events[n - 1].value) * 0.4;
+        curvePts.push({ x: W, y: my(rightVal) });
+
+        var pathD = catmullRomPath(curvePts);
+
+        // Dense samples for y-lookup (scrubber + now dot)
+        var samples = sampleCatmullRom(curvePts, 200);
+
+        // Time ↔ x mapping through event anchors
+        function timeToX(t) {
+            if (t <= events[0].time) {
+                var rate = (evX[1] - evX[0]) / (events[1].time - events[0].time);
+                return evX[0] + (t - events[0].time) * rate;
+            }
+            if (t >= events[n - 1].time) {
+                var rate = (evX[n - 1] - evX[n - 2]) / (events[n - 1].time - events[n - 2].time);
+                return evX[n - 1] + (t - events[n - 1].time) * rate;
+            }
+            for (var i = 0; i < n - 1; i++) {
+                if (t >= events[i].time && t <= events[i + 1].time) {
+                    var f = (t - events[i].time) / (events[i + 1].time - events[i].time);
+                    return evX[i] + f * (evX[i + 1] - evX[i]);
+                }
+            }
+            return evX[0];
+        }
+        function xToTime(x) {
+            if (x <= evX[0]) {
+                var rate = (events[1].time - events[0].time) / (evX[1] - evX[0]);
+                return events[0].time + (x - evX[0]) * rate;
+            }
+            if (x >= evX[n - 1]) {
+                var rate = (events[n - 1].time - events[n - 2].time) / (evX[n - 1] - evX[n - 2]);
+                return events[n - 1].time + (x - evX[n - 1]) * rate;
+            }
+            for (var i = 0; i < n - 1; i++) {
+                if (x >= evX[i] && x <= evX[i + 1]) {
+                    var f = (x - evX[i]) / (evX[i + 1] - evX[i]);
+                    return events[i].time + f * (events[i + 1].time - events[i].time);
+                }
+            }
+            return events[0].time;
+        }
+
+        // Compute "now" x position for splitting the curve
+        var now = Date.now();
+        var nowX = -1;
+        var nowY = 0;
+        if (now >= events[0].time && now <= events[n - 1].time) {
+            nowX = timeToX(now);
+            nowY = curveYAtX(samples, nowX);
+        }
+
+        // Split samples into past (before now) and future (after now) for two-tone line
+        var pastPts = [], futurePts = [];
+        if (nowX >= 0) {
+            for (var i = 0; i < samples.length; i++) {
+                if (samples[i].x <= nowX) {
+                    pastPts.push(samples[i]);
+                } else {
+                    if (futurePts.length === 0) {
+                        // Add the now point as the bridge
+                        pastPts.push({ x: nowX, y: nowY });
+                        futurePts.push({ x: nowX, y: nowY });
+                    }
+                    futurePts.push(samples[i]);
+                }
+            }
+        } else {
+            // Now is outside range — entire curve is one tone
+            pastPts = samples;
+        }
+
+        // Build SVG path strings from sample points
+        function samplesPath(pts) {
+            if (pts.length < 2) return '';
+            var d = 'M' + pts[0].x.toFixed(1) + ',' + pts[0].y.toFixed(1);
+            for (var i = 1; i < pts.length; i++) {
+                d += ' L' + pts[i].x.toFixed(1) + ',' + pts[i].y.toFixed(1);
+            }
+            return d;
+        }
+
+        var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
+
+        // Gradient fill beneath the curve
+        svg += '<defs><linearGradient id="tide-fill-grad" x1="0" y1="0" x2="0" y2="1">';
+        svg += '<stop offset="0%" stop-color="#254A7A" stop-opacity="0.7"/>';
+        svg += '<stop offset="100%" stop-color="#254A7A" stop-opacity="0.05"/>';
+        svg += '</linearGradient></defs>';
+        var fillD = pathD + ' L' + W + ',' + H + ' L0,' + H + ' Z';
+        svg += '<path d="' + fillD + '" fill="url(#tide-fill-grad)"/>';
+
+        // Curve lines — past (dimmer) and future (highlighted)
+        if (futurePts.length > 1) {
+            svg += '<path d="' + samplesPath(pastPts) + '" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>';
+            svg += '<path d="' + samplesPath(futurePts) + '" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5"/>';
+        } else {
+            svg += '<path d="' + pathD + '" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>';
+        }
+
+        // Hi/lo event dots and labels
+        var valSize = Math.round(H * 0.14);
+        var timeSize = Math.round(H * 0.11);
+        var gapAbove = Math.round(H * 0.09);
+        var gapBelow = Math.round(H * 0.16);
+
+        for (var i = 0; i < n; i++) {
+            var e = events[i];
+            var cx = evX[i];
+            var cy = my(e.value);
+
+            svg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="3.5" fill="white"/>';
+            svg += '<text x="' + cx.toFixed(1) + '" y="' + (cy - gapAbove).toFixed(1) + '" fill="white" font-size="' + valSize + '" font-family="Monda,sans-serif" font-weight="500" text-anchor="middle">' + e.value.toFixed(1) + '</text>';
+            svg += '<text x="' + cx.toFixed(1) + '" y="' + (cy + gapBelow).toFixed(1) + '" fill="white" font-size="' + timeSize + '" font-family="Inter,sans-serif" font-weight="500" text-anchor="middle" opacity="0.5">' + formatTideAMPM(e.time) + '</text>';
+        }
+
+        // "Now" dot — persistent on the curve
+        if (nowX >= 0) {
+            svg += '<circle cx="' + nowX.toFixed(1) + '" cy="' + nowY.toFixed(1) + '" r="4.5" fill="white"/>';
+        }
+
+        // Scrubber elements (hidden initially)
+        svg += '<line id="tide-scrub-line" x1="0" y1="0" x2="0" y2="' + H + '" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-dasharray="3,3" visibility="hidden"/>';
+        svg += '<circle id="tide-scrub-dot-top" cx="0" cy="0" r="3" fill="white" visibility="hidden"/>';
+        svg += '<circle id="tide-scrub-dot-bot" cx="0" cy="0" r="3" fill="white" visibility="hidden"/>';
+
+        svg += '</svg>';
+
+        container.innerHTML = svg;
+
+        // Store data for scrubber
+        container._td = {
+            hourly: hourly, events: events, evX: evX,
+            xToTime: xToTime, samples: samples,
+            vMin: vMin, vMax: vMax, W: W, H: H,
+            padTop: padTop, padBot: padBot
+        };
+
+        initTideScrubber(container);
+    }
+
+    function interpolateTide(hourly, time) {
+        for (var i = 0; i < hourly.length - 1; i++) {
+            if (time >= hourly[i].time && time <= hourly[i + 1].time) {
+                var f = (time - hourly[i].time) / (hourly[i + 1].time - hourly[i].time);
+                return hourly[i].value + (hourly[i + 1].value - hourly[i].value) * f;
+            }
+        }
+        return time <= hourly[0].time ? hourly[0].value : hourly[hourly.length - 1].value;
+    }
+
+    function getTideState(hourly, time) {
+        for (var i = 0; i < hourly.length - 1; i++) {
+            if (time >= hourly[i].time && time <= hourly[i + 1].time) {
+                return hourly[i + 1].value > hourly[i].value ? 'Rising' : 'Falling';
+            }
+        }
+        return '--';
+    }
+
+    function initTideScrubber(container) {
+        var svgEl = container.querySelector('svg');
+        if (!svgEl) return;
+
+        function scrubTo(clientX) {
+            var td = container._td;
+            if (!td) return;
+
+            var rect = svgEl.getBoundingClientRect();
+            var pct = (clientX - rect.left) / rect.width;
+            pct = Math.max(0, Math.min(1, pct));
+
+            var sx = pct * td.W;
+            var time = td.xToTime(sx);
+            var height = interpolateTide(td.hourly, time);
+            var state = getTideState(td.hourly, time);
+
+            // Update scrubber visuals
+            var line = document.getElementById('tide-scrub-line');
+            var dotTop = document.getElementById('tide-scrub-dot-top');
+            var dotBot = document.getElementById('tide-scrub-dot-bot');
+            if (line) {
+                line.setAttribute('x1', sx.toFixed(1));
+                line.setAttribute('x2', sx.toFixed(1));
+                line.setAttribute('visibility', 'visible');
+            }
+            if (dotTop) {
+                dotTop.setAttribute('cx', sx.toFixed(1));
+                dotTop.setAttribute('cy', '0');
+                dotTop.setAttribute('visibility', 'visible');
+            }
+            if (dotBot) {
+                dotBot.setAttribute('cx', sx.toFixed(1));
+                dotBot.setAttribute('cy', td.H.toFixed(1));
+                dotBot.setAttribute('visibility', 'visible');
+            }
+
+            // Update header
+            document.getElementById('tide-val').textContent = height.toFixed(1);
+            document.getElementById('tide-state').textContent = state;
+            document.getElementById('tide-time').textContent = formatTideAMPM(time);
+        }
+
+        svgEl.addEventListener('mousemove', function (e) { scrubTo(e.clientX); });
+        svgEl.addEventListener('touchstart', function (e) { scrubTo(e.touches[0].clientX); e.stopPropagation(); }, { passive: true });
+        svgEl.addEventListener('touchmove', function (e) { scrubTo(e.touches[0].clientX); e.preventDefault(); e.stopPropagation(); }, { passive: false });
     }
 
     function getPeriodLabel(period) {
@@ -471,8 +778,8 @@
                 var pct = (v / max) * 100;
                 pct = Math.max(pct, 6);
                 var barColor = severityColor(v, cfg.metric);
-                var isNow = i === 0 ? ' is-now' : '';
-                barsHTML += '<div class="forecast-bar' + isNow + '" style="height:' + pct + '%;background:' + barColor + '"></div>';
+                var selected = i === 0 ? ' is-selected' : '';
+                barsHTML += '<div class="forecast-bar' + selected + '" data-index="' + i + '" style="height:' + pct + '%;background:' + barColor + '"></div>';
             }
             barsHTML += '</div>';
 
@@ -501,6 +808,115 @@
             container.innerHTML = headerHTML +
                 '<div class="forecast-bars-wrap">' + barsHTML +
                 '<div style="position:relative;height:20px">' + labelsHTML + '</div></div>';
+
+            // Store data for bar selection updates
+            container._forecastData = {
+                data: barData,
+                times: barTimes,
+                dirData: cfg.dirKey ? (hourly[cfg.dirKey] || []).slice(currentIdx) : null,
+                metric: cfg.metric,
+                label: cfg.label,
+                unit: cfg.unit,
+                hasDirKey: !!cfg.dirKey
+            };
+
+            // Scrubber: drag/touch across bars to select
+            var barsEl = container.querySelector('.forecast-bars');
+            if (barsEl) {
+                initForecastScrubber(barsEl, container);
+            }
+        });
+    }
+
+    function selectForecastBar(container, idx) {
+        var fd = container._forecastData;
+        if (!fd) return;
+
+        // Move selection
+        var bars = container.querySelectorAll('.forecast-bar');
+        bars.forEach(function (b) { b.classList.remove('is-selected'); });
+        if (bars[idx]) bars[idx].classList.add('is-selected');
+
+        // Update header values
+        var val = fd.data[idx] != null ? fd.data[idx] : 0;
+        var color = severityColor(val, fd.metric);
+
+        var displayVal;
+        if (fd.metric === 'temp') {
+            displayVal = Math.round(val);
+        } else if (fd.metric === 'height') {
+            displayVal = val.toFixed(1);
+        } else {
+            displayVal = Math.round(val);
+        }
+
+        // Direction or descriptive label
+        var dirText = '';
+        if (fd.hasDirKey && fd.dirData && fd.dirData[idx] != null) {
+            dirText = OceanWeather.degreesToCompass(fd.dirData[idx]);
+        } else if (fd.metric === 'temp') {
+            dirText = getTempLabel(val);
+        } else {
+            dirText = getPeriodLabel(val);
+        }
+
+        // Time for selected bar
+        var timeStr = '';
+        if (fd.times[idx]) {
+            var d = new Date(fd.times[idx] * 1000);
+            timeStr = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        }
+
+        // Update DOM
+        var dirEl = container.querySelector('.forecast-direction');
+        var timeEl = container.querySelector('.forecast-time');
+        var pillEl = container.querySelector('.forecast-pill');
+        if (dirEl) dirEl.textContent = dirText;
+        if (timeEl) timeEl.textContent = timeStr;
+        if (pillEl) {
+            pillEl.textContent = displayVal + fd.unit;
+            pillEl.style.background = color;
+        }
+    }
+
+    function getBarIndexFromX(barsEl, clientX) {
+        var rect = barsEl.getBoundingClientRect();
+        var x = clientX - rect.left;
+        var pct = x / rect.width;
+        pct = Math.max(0, Math.min(1, pct));
+        var bars = barsEl.querySelectorAll('.forecast-bar');
+        return Math.round(pct * (bars.length - 1));
+    }
+
+    function initForecastScrubber(barsEl, container) {
+        var scrubbing = false;
+
+        function scrubTo(clientX) {
+            var idx = getBarIndexFromX(barsEl, clientX);
+            selectForecastBar(container, idx);
+        }
+
+        // Touch: drag to scrub
+        barsEl.addEventListener('touchstart', function (e) {
+            scrubbing = true;
+            scrubTo(e.touches[0].clientX);
+            e.stopPropagation();
+        }, { passive: true });
+
+        barsEl.addEventListener('touchmove', function (e) {
+            if (!scrubbing) return;
+            scrubTo(e.touches[0].clientX);
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
+
+        barsEl.addEventListener('touchend', function () {
+            scrubbing = false;
+        });
+
+        // Desktop: hover to scrub (no click needed)
+        barsEl.addEventListener('mousemove', function (e) {
+            scrubTo(e.clientX);
         });
     }
 
@@ -659,10 +1075,8 @@
         document.getElementById('wind-gust').textContent = '--';
         document.getElementById('card-temp-val').textContent = '--';
         document.getElementById('card-temp-detail').textContent = '--';
-        document.getElementById('card-tide-val').textContent = '--';
-        document.getElementById('card-tide-state').textContent = '--';
-        document.getElementById('tide-time-top').textContent = '--:--';
-        document.getElementById('tide-time-bottom').textContent = '--:--';
+        document.getElementById('tide-val').textContent = '--';
+        document.getElementById('tide-state').textContent = '--';
         ['trend-temp', 'trend-wind', 'trend-swell', 'trend-period'].forEach(function (id) {
             document.getElementById(id).innerHTML = '';
         });

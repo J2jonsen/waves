@@ -165,26 +165,20 @@
             </div>
 
             <div class="data-card" id="card-tide" style="--delay: 4">
-                <div class="card-pill pill-tide">
-                    <span class="pill-value" id="card-tide-val">--</span>
-                    <span class="pill-unit">FT</span>
-                </div>
-                <div class="tide-gauge" id="tide-gauge">
-                    <span class="tide-time" id="tide-time-top">--:--</span>
-                    <div class="tide-track">
-                        <div class="tide-indicator" id="tide-indicator">
-                            <div class="tide-dot"></div>
-                            <svg class="tide-arrow" width="8" height="6" viewBox="0 0 8 6" fill="none">
-                                <path d="M4 6L0 0h8L4 6z" fill="currentColor"/>
-                            </svg>
+                <div class="tide-header">
+                    <div class="tide-header-left">
+                        <span class="forecast-label">TIDE</span>
+                        <span class="tide-state" id="tide-state">--</span>
+                    </div>
+                    <div class="tide-header-right">
+                        <span class="forecast-time" id="tide-time">--</span>
+                        <div class="tide-pill" id="tide-pill">
+                            <span class="tide-pill-val" id="tide-val">--</span>
+                            <span class="tide-pill-unit">FT</span>
                         </div>
                     </div>
-                    <span class="tide-time" id="tide-time-bottom">--:--</span>
                 </div>
-                <div class="card-info">
-                    <div class="card-info-label">TIDE</div>
-                    <div class="card-info-detail" id="card-tide-state">--</div>
-                </div>
+                <div class="tide-curve" id="tide-curve"></div>
             </div>
         </section>
         </div>

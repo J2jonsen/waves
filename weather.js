@@ -298,8 +298,8 @@ var OceanWeather = (function () {
             '&product=predictions&datum=MLLW&units=english' +
             '&time_zone=gmt&format=json';
 
-        var hiloUrl = base + '?begin_date=' + today + '&range=36' + common + '&interval=hilo';
-        var hourlyUrl = base + '?begin_date=' + today + '&range=36' + common + '&interval=h';
+        var hiloUrl = base + '?begin_date=' + today + '&range=48' + common + '&interval=hilo';
+        var hourlyUrl = base + '?begin_date=' + today + '&range=48' + common + '&interval=h';
 
         return Promise.all([
             fetch(hiloUrl).then(function (r) { return r.json(); }),
@@ -338,21 +338,44 @@ var OceanWeather = (function () {
 
         if (!prev || !next) return null;
 
-        // Interpolate current height from hourly data
+        // Parse hourly predictions into array
         var hourly = hourlyData.predictions;
+        var hourlyParsed = [];
+        for (var i = 0; i < hourly.length; i++) {
+            var ht = new Date(hourly[i].t.replace(' ', 'T') + 'Z').getTime();
+            hourlyParsed.push({ time: ht, value: parseFloat(hourly[i].v) });
+        }
+
+        // Interpolate current height from hourly data
         var currentHeight = null;
-        for (var i = 0; i < hourly.length - 1; i++) {
-            var t0 = new Date(hourly[i].t.replace(' ', 'T') + 'Z').getTime();
-            var t1 = new Date(hourly[i + 1].t.replace(' ', 'T') + 'Z').getTime();
-            if (now >= t0 && now < t1) {
-                var frac = (now - t0) / (t1 - t0);
-                currentHeight = parseFloat(hourly[i].v) + (parseFloat(hourly[i + 1].v) - parseFloat(hourly[i].v)) * frac;
+        for (var i = 0; i < hourlyParsed.length - 1; i++) {
+            if (now >= hourlyParsed[i].time && now < hourlyParsed[i + 1].time) {
+                var frac = (now - hourlyParsed[i].time) / (hourlyParsed[i + 1].time - hourlyParsed[i].time);
+                currentHeight = hourlyParsed[i].value + (hourlyParsed[i + 1].value - hourlyParsed[i].value) * frac;
                 break;
             }
         }
 
         if (currentHeight === null) {
-            currentHeight = parseFloat(hourly[hourly.length - 1].v);
+            currentHeight = hourlyParsed.length > 0 ? hourlyParsed[hourlyParsed.length - 1].value : 0;
+        }
+
+        // Filter hourly to ~24h window from now
+        var windowStart = now - 2 * 3600000; // 2h before now for context
+        var windowEnd = now + 36 * 3600000;
+        var visibleHourly = hourlyParsed.filter(function (p) { return p.time >= windowStart && p.time <= windowEnd; });
+
+        // Get the nearest 4 events centered around now (prev + next 3)
+        var prevIdx = -1;
+        for (var i = 0; i < events.length; i++) {
+            if (events[i].time <= now) prevIdx = i;
+        }
+        var startIdx = Math.max(0, prevIdx);
+        var visibleEvents = events.slice(startIdx, startIdx + 4);
+        // If we don't have 4 forward, try to include earlier ones
+        if (visibleEvents.length < 4 && startIdx > 0) {
+            var need = 4 - visibleEvents.length;
+            visibleEvents = events.slice(Math.max(0, startIdx - need), startIdx + 4);
         }
 
         // Progress through current cycle (0 = at prev event, 1 = at next event)
@@ -379,7 +402,9 @@ var OceanWeather = (function () {
             prevTime: prev.time,
             nextTime: next.time,
             prevType: prev.type,
-            nextType: next.type
+            nextType: next.type,
+            events: visibleEvents,
+            hourlyPredictions: visibleHourly
         };
     }
 
