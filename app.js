@@ -160,9 +160,24 @@
         return weatherIconSVG('sun');
     }
 
+    // --- Douglas Sea State (wave height in meters) ---
+    function getDouglasSeaState(heightM) {
+        if (heightM === 0) return 'Glassy';
+        if (heightM <= 0.1) return 'Calm';
+        if (heightM <= 0.5) return 'Mild Chop';
+        if (heightM <= 1.25) return 'Slight Chop';
+        if (heightM <= 2.5) return 'Moderate Chop';
+        if (heightM <= 4) return 'Choppy';
+        if (heightM <= 6) return 'Heavy Swells';
+        if (heightM <= 9) return 'High Swells';
+        if (heightM <= 14) return 'Storm Seas';
+        return 'Extreme';
+    }
+
     // --- Trend arrows ---
     var TREND_ARROW_UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
     var TREND_ARROW_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/></svg>';
+    var TREND_ARROW_FLAT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="14 7 19 12 14 17"/></svg>';
 
     function updateTrends(hourly) {
         updateTrendCard('trend-temp', hourly.seaSurfaceTemp, hourly.currentIndex, '°F', 0.5);
@@ -185,8 +200,10 @@
 
         var delta = future - current;
         var abs = Math.abs(delta);
+
         if (abs < threshold) {
-            el.innerHTML = '';
+            el.innerHTML = TREND_ARROW_FLAT +
+                '<span class="trend-delta">0' + unit + '</span>';
             return;
         }
 
@@ -224,7 +241,7 @@
         // Weather condition icon + text
         document.getElementById('condition-icon').innerHTML = getConditionIcon(r.weatherCondition);
         document.getElementById('condition-text').textContent = r.weatherCondition;
-        document.getElementById('sea-state-label').textContent = r.beaufort.description;
+        document.getElementById('sea-state-label').textContent = getDouglasSeaState(r.waveHeight);
 
         // HUD stats + accent bar colors
         var heightFt = r.waveHeight * 3.281;

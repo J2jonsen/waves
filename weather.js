@@ -242,6 +242,27 @@ var OceanWeather = (function () {
     // --- Tide Data (NOAA CO-OPS API) ---
 
     var NOAA_STATIONS = [
+        // ===== PACIFIC — Alaska =====
+        { id: '9450460', lat: 59.6033, lng: -151.7200 },  // Seldovia
+        { id: '9451600', lat: 57.7317, lng: -152.5117 },  // Kodiak
+        { id: '9451054', lat: 61.1250, lng: -146.3617 },  // Valdez
+        { id: '9452210', lat: 57.0517, lng: -135.3417 },  // Sitka
+        { id: '9452634', lat: 58.2983, lng: -134.4117 },  // Juneau
+        { id: '9455920', lat: 55.3317, lng: -131.6267 },  // Ketchikan
+
+        // ===== PACIFIC — Washington =====
+        { id: '9443090', lat: 48.3700, lng: -124.6117 },  // Neah Bay
+        { id: '9441102', lat: 46.9067, lng: -124.1050 },  // Westport
+        { id: '9444900', lat: 48.5450, lng: -123.0100 },  // Friday Harbor
+        { id: '9447130', lat: 47.6027, lng: -122.3393 },  // Seattle
+        { id: '9446484', lat: 47.2633, lng: -122.4133 },  // Tacoma
+
+        // ===== PACIFIC — Oregon =====
+        { id: '9439040', lat: 46.2073, lng: -123.7683 },  // Astoria
+        { id: '9435380', lat: 44.6250, lng: -124.0433 },  // South Beach (Newport)
+        { id: '9432780', lat: 43.3450, lng: -124.3233 },  // Charleston (Coos Bay)
+
+        // ===== PACIFIC — California =====
         { id: '9419750', lat: 41.7456, lng: -124.1844 },  // Crescent City
         { id: '9418767', lat: 40.7667, lng: -124.2167 },  // North Spit (Eureka)
         { id: '9416841', lat: 38.9133, lng: -123.7083 },  // Arena Cove
@@ -254,8 +275,86 @@ var OceanWeather = (function () {
         { id: '9410660', lat: 33.7200, lng: -118.2717 },  // Los Angeles
         { id: '9410230', lat: 32.8669, lng: -117.2571 },  // La Jolla
         { id: '9410170', lat: 32.7142, lng: -117.1736 },  // San Diego
+
+        // ===== HAWAII =====
         { id: '1612340', lat: 21.3067, lng: -157.8670 },  // Honolulu
         { id: '1617760', lat: 19.7314, lng: -155.0550 },  // Hilo
+        { id: '1615680', lat: 21.9544, lng: -159.3561 },  // Nawiliwili (Kauai)
+        { id: '1611400', lat: 20.8950, lng: -156.4767 },  // Kahului (Maui)
+
+        // ===== GULF COAST — Texas =====
+        { id: '8770570', lat: 29.3100, lng: -94.7933 },   // Sabine Pass
+        { id: '8771450', lat: 29.3101, lng: -94.7935 },   // Galveston Pier 21
+        { id: '8771341', lat: 29.3574, lng: -94.7247 },   // Galveston Bay
+        { id: '8775870', lat: 28.4483, lng: -96.3950 },   // Bob Hall Pier (Corpus Christi)
+        { id: '8779770', lat: 26.0617, lng: -97.2150 },   // Port Isabel
+        { id: '8773146', lat: 28.9483, lng: -95.3083 },   // Freeport
+
+        // ===== GULF COAST — Louisiana =====
+        { id: '8760922', lat: 29.8633, lng: -89.6733 },   // Pilots Station East
+        { id: '8761724', lat: 29.0900, lng: -90.1983 },   // Grand Isle
+        { id: '8764044', lat: 29.5550, lng: -91.5550 },   // Berwick
+
+        // ===== GULF COAST — Mississippi / Alabama =====
+        { id: '8747437', lat: 30.3267, lng: -89.3250 },   // Bay Waveland Yacht Club
+        { id: '8735180', lat: 30.2483, lng: -88.0750 },   // Dauphin Island
+
+        // ===== GULF COAST — Florida (Gulf side) =====
+        { id: '8729108', lat: 30.4044, lng: -87.2112 },   // Pensacola
+        { id: '8728690', lat: 30.1528, lng: -85.6667 },   // Panama City Beach
+        { id: '8727520', lat: 29.7267, lng: -84.9833 },   // Cedar Key / Apalachicola area
+        { id: '8726520', lat: 27.7606, lng: -82.6269 },   // St. Petersburg
+        { id: '8725110', lat: 26.6477, lng: -81.8715 },   // Naples
+        { id: '8724580', lat: 24.5557, lng: -81.8075 },   // Key West
+
+        // ===== ATLANTIC — Florida (East side) =====
+        { id: '8723214', lat: 25.7683, lng: -80.1317 },   // Virginia Key (Miami)
+        { id: '8721604', lat: 28.4152, lng: -80.5930 },   // Trident Pier (Cape Canaveral)
+        { id: '8720218', lat: 30.3978, lng: -81.4283 },   // Mayport (Jacksonville)
+        { id: '8720030', lat: 30.6714, lng: -81.4658 },   // Fernandina Beach
+
+        // ===== ATLANTIC — Georgia / South Carolina =====
+        { id: '8670870', lat: 32.0333, lng: -80.9017 },   // Fort Pulaski (Savannah)
+        { id: '8665530', lat: 32.7817, lng: -79.9250 },   // Charleston
+
+        // ===== ATLANTIC — North Carolina =====
+        { id: '8658120', lat: 33.9533, lng: -77.9533 },   // Wilmington
+        { id: '8656483', lat: 34.7178, lng: -76.6700 },   // Beaufort (NC)
+        { id: '8652587', lat: 35.7950, lng: -75.5483 },   // Oregon Inlet
+        { id: '8651370', lat: 36.1833, lng: -75.7467 },   // Duck
+
+        // ===== ATLANTIC — Virginia / Chesapeake =====
+        { id: '8638863', lat: 36.9462, lng: -76.3297 },   // Chesapeake Bay Bridge-Tunnel
+        { id: '8639348', lat: 36.8300, lng: -76.2900 },   // Money Point (Norfolk)
+        { id: '8637624', lat: 37.2267, lng: -76.4783 },   // Gloucester Point
+
+        // ===== ATLANTIC — Maryland / Delaware =====
+        { id: '8574680', lat: 38.9833, lng: -76.4817 },   // Baltimore
+        { id: '8557380', lat: 38.7817, lng: -75.1192 },   // Lewes (Delaware)
+        { id: '8536110', lat: 39.3533, lng: -75.5800 },   // Cape May
+
+        // ===== ATLANTIC — New Jersey / New York =====
+        { id: '8534720', lat: 39.6650, lng: -74.0183 },   // Atlantic City
+        { id: '8531680', lat: 40.4667, lng: -74.0093 },   // Sandy Hook
+        { id: '8518750', lat: 40.7006, lng: -74.0142 },   // The Battery (NYC)
+        { id: '8516945', lat: 40.8103, lng: -73.7650 },   // Kings Point
+        { id: '8510560', lat: 41.0483, lng: -71.9600 },   // Montauk
+
+        // ===== ATLANTIC — Connecticut / Rhode Island =====
+        { id: '8467150', lat: 41.2833, lng: -72.9083 },   // Bridgeport
+        { id: '8461490', lat: 41.3614, lng: -72.0900 },   // New London
+        { id: '8452660', lat: 41.5044, lng: -71.3261 },   // Newport (RI)
+        { id: '8454000', lat: 41.8072, lng: -71.4017 },   // Providence
+
+        // ===== ATLANTIC — Massachusetts =====
+        { id: '8449130', lat: 41.5233, lng: -70.6717 },   // Nantucket
+        { id: '8447930', lat: 41.7043, lng: -69.9481 },   // Chatham / Woods Hole
+        { id: '8443970', lat: 42.3539, lng: -71.0503 },   // Boston
+
+        // ===== ATLANTIC — Maine =====
+        { id: '8418150', lat: 43.6567, lng: -70.2467 },   // Portland
+        { id: '8413320', lat: 44.3917, lng: -68.2050 },   // Bar Harbor
+        { id: '8411060', lat: 44.9050, lng: -67.0017 },   // Eastport
     ];
 
     var MAX_STATION_DISTANCE = 200; // km

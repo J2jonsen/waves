@@ -11,7 +11,7 @@
     --grey: #9297a0;
     --white: #ffffff;
     --bg: #081428;
-    --card-bg: rgba(9, 19, 39, 0.3);
+    --card-bg: rgba(9, 19, 39, 0.15);
     --card-border: rgba(255, 255, 255, 0.06);
 
     /* Colors — pill accents */
@@ -503,8 +503,8 @@ canvas {
 }
 
 .card-trend svg {
-    width: 10px;
-    height: 10px;
+    width: 18px;
+    height: 18px;
     opacity: 0.5;
     flex-shrink: 0;
     margin-bottom: 1px;
