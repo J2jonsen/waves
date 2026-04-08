@@ -389,14 +389,12 @@
             return { type: 'FeatureCollection', features: features };
         }
 
-        // Radar dots: corner + center of each 0.5° box (0.25° grid offset by half)
+        // Radar dots: corner + center of each 2° box (~23K features, performant)
         var dotFeatures = [];
-        for (var lat = -60; lat <= 65; lat += 0.5) {
-            for (var lng = -180; lng <= 180; lng += 0.5) {
-                // Corner dot
+        for (var lat = -60; lat <= 65; lat += 2) {
+            for (var lng = -180; lng <= 180; lng += 2) {
                 dotFeatures.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: {} });
-                // Center dot
-                dotFeatures.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng + 0.25, lat + 0.25] }, properties: {} });
+                dotFeatures.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng + 1, lat + 1] }, properties: {} });
             }
         }
         map.addSource('radar-dots', { type: 'geojson', data: { type: 'FeatureCollection', features: dotFeatures } });
@@ -406,9 +404,9 @@
             source: 'radar-dots',
             minzoom: 6,
             paint: {
-                'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 1.0, 8, 1.5, 10, 2.5],
+                'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 1.2, 8, 2.0, 10, 3.0],
                 'circle-color': 'rgba(140, 190, 240, 1)',
-                'circle-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.18, 8, 0.28, 10, 0.35]
+                'circle-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.20, 8, 0.30, 10, 0.38]
             }
         });
 
@@ -418,18 +416,20 @@
             { step: 5,    minzoom: 2,  id: '5',    opacity: 0.12, width: 0.7,  labels: true  },
             { step: 2,    minzoom: 4,  id: '2',    opacity: 0.08, width: 0.5,  labels: false },
             { step: 1,    minzoom: 5,  id: '1',    opacity: 0.07, width: 0.4,  labels: true  },
-            { step: 0.5,  minzoom: 7,  id: '0_5',  opacity: 0.05, width: 0.35, labels: false },
-            { step: 0.25, minzoom: 9,  id: '0_25', opacity: 0.04, width: 0.3,  labels: false }
+            { step: 0.5,  minzoom: 7,  id: '0_5',  opacity: 0.05, width: 0.35, labels: false }
         ];
 
         function buildGraticule(step) {
             var features = [];
-            var res = step < 1 ? 0.5 : 1;
+            // Lat/lon lines are straight in Mercator — use coarse coords
+            // Just enough points for label placement along the line
+            var res = Math.max(step, 5);
             for (var lat = -80; lat <= 80; lat += step) {
                 var coords = [];
                 for (var lng = -180; lng <= 180; lng += res) {
                     coords.push([lng, lat]);
                 }
+                if (coords[coords.length - 1][0] !== 180) coords.push([180, lat]);
                 features.push({
                     type: 'Feature',
                     geometry: { type: 'LineString', coordinates: coords },
@@ -441,6 +441,7 @@
                 for (var lat = -80; lat <= 80; lat += res) {
                     coords.push([lng, lat]);
                 }
+                if (coords[coords.length - 1][1] !== 80) coords.push([lng, 80]);
                 features.push({
                     type: 'Feature',
                     geometry: { type: 'LineString', coordinates: coords },
