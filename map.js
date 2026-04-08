@@ -339,6 +339,8 @@
         var coordsText = lat.toFixed(3) + ', ' + lng.toFixed(3);
         var params = 'lat=' + lat + '&lng=' + lng;
         if (name) params += '&name=' + encodeURIComponent(name);
+        // Save selection to localStorage so it persists
+        try { localStorage.setItem('seastat-location', JSON.stringify({ lat: lat, lng: lng, name: name || '' })); } catch (e) {}
         return '<div class="popup-name">' + (name || 'Ocean Point') + '</div>' +
                '<div class="popup-coords">' + coordsText + '</div>' +
                '<a class="popup-link" href="./?'  + params + '">View Waves →</a>';

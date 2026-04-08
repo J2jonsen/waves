@@ -1120,7 +1120,14 @@
         }
         loadLocation({ name: name, lat: lat, lng: lng });
     } else {
-        loadLocation(OceanWeather.getDefaultLocation());
+        // Check localStorage for a previously selected location
+        var saved = null;
+        try { saved = JSON.parse(localStorage.getItem('seastat-location')); } catch (e) {}
+        if (saved && saved.lat && saved.lng) {
+            loadLocation({ name: saved.name || saved.lat.toFixed(3) + ', ' + saved.lng.toFixed(3), lat: saved.lat, lng: saved.lng });
+        } else {
+            loadLocation(OceanWeather.getDefaultLocation());
+        }
     }
 
     // --- Card scroll-in animations ---
