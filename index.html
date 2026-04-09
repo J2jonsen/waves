@@ -114,9 +114,34 @@
             <div class="data-card" id="card-wind" style="--delay: 1">
                 <div class="card-carousel">
                     <div class="card-slide card-current">
-                        <div class="card-pill pill-wind">
-                            <span class="pill-value" id="card-wind-val">--</span>
-                            <span class="pill-unit">MPH</span>
+                        <div class="wind-dial" id="wind-dial">
+                            <svg viewBox="0 0 124 124" class="wind-dial-svg">
+                                <!-- Outer ring -->
+                                <circle cx="62" cy="62" r="58" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+                                <!-- Tick marks: 12 ticks, cardinal=long, intermediate=short -->
+                                <g class="wind-dial-ticks">
+                                    <line x1="62" y1="4" x2="62" y2="14" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/><!-- N -->
+                                    <line x1="62" y1="4" x2="62" y2="9" stroke="rgba(255,255,255,0.25)" stroke-width="1" transform="rotate(30 62 62)"/>
+                                    <line x1="62" y1="4" x2="62" y2="9" stroke="rgba(255,255,255,0.25)" stroke-width="1" transform="rotate(60 62 62)"/>
+                                    <line x1="62" y1="4" x2="62" y2="14" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" transform="rotate(90 62 62)"/><!-- E -->
+                                    <line x1="62" y1="4" x2="62" y2="9" stroke="rgba(255,255,255,0.25)" stroke-width="1" transform="rotate(120 62 62)"/>
+                                    <line x1="62" y1="4" x2="62" y2="9" stroke="rgba(255,255,255,0.25)" stroke-width="1" transform="rotate(150 62 62)"/>
+                                    <line x1="62" y1="4" x2="62" y2="14" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" transform="rotate(180 62 62)"/><!-- S -->
+                                    <line x1="62" y1="4" x2="62" y2="9" stroke="rgba(255,255,255,0.25)" stroke-width="1" transform="rotate(210 62 62)"/>
+                                    <line x1="62" y1="4" x2="62" y2="9" stroke="rgba(255,255,255,0.25)" stroke-width="1" transform="rotate(240 62 62)"/>
+                                    <line x1="62" y1="4" x2="62" y2="14" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" transform="rotate(270 62 62)"/><!-- W -->
+                                    <line x1="62" y1="4" x2="62" y2="9" stroke="rgba(255,255,255,0.25)" stroke-width="1" transform="rotate(300 62 62)"/>
+                                    <line x1="62" y1="4" x2="62" y2="9" stroke="rgba(255,255,255,0.25)" stroke-width="1" transform="rotate(330 62 62)"/>
+                                </g>
+                                <!-- Direction arrow (rotates via JS) -->
+                                <g id="wind-dial-arrow">
+                                    <rect x="58.5" y="5" width="7" height="14" rx="2" fill="#F3B139"/>
+                                    <polygon points="62,29 50,16 74,16" fill="#F3B139"/>
+                                </g>
+                                <!-- Speed value + unit -->
+                                <text x="62" y="70" text-anchor="middle" fill="white" font-family="Monda, sans-serif" font-weight="700" font-size="38" id="wind-dial-speed">--</text>
+                                <text x="62" y="84" text-anchor="middle" fill="white" font-family="Monda, sans-serif" font-weight="500" font-size="11" opacity="0.6">MPH</text>
+                            </svg>
                         </div>
                         <div class="card-info">
                             <div class="card-info-label">WIND</div>

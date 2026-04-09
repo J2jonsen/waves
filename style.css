@@ -368,6 +368,23 @@ canvas {
     transform: translateY(0);
 }
 
+/* Wind dial */
+.wind-dial {
+    flex-shrink: 0;
+    width: 124px;
+    height: 124px;
+}
+
+.wind-dial-svg {
+    width: 100%;
+    height: 100%;
+}
+
+#wind-dial-arrow {
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: 62px 62px;
+}
+
 /* Colored pill with large number */
 .card-pill {
     flex-shrink: 0;
@@ -989,6 +1006,11 @@ canvas {
         width: 226px;
         height: 165px;
         gap: 18px;
+    }
+
+    .wind-dial {
+        width: 160px;
+        height: 160px;
     }
 
     .card-current {

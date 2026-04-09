@@ -160,6 +160,17 @@
         return weatherIconSVG('sun');
     }
 
+    // --- Wind direction to full word ---
+    function degreesToFullWord(deg) {
+        var dirs = [
+            'North', 'North-Northeast', 'Northeast', 'East-Northeast',
+            'East', 'East-Southeast', 'Southeast', 'South-Southeast',
+            'South', 'South-Southwest', 'Southwest', 'West-Southwest',
+            'West', 'West-Northwest', 'Northwest', 'North-Northwest'
+        ];
+        return dirs[Math.round(deg / 22.5) % 16];
+    }
+
     // --- Douglas Sea State (wave height in meters) ---
     function getDouglasSeaState(heightM) {
         if (heightM === 0) return 'Glassy';
@@ -297,10 +308,11 @@
         document.getElementById('card-temp-val').textContent = Math.round(tempF);
         document.getElementById('card-temp-detail').textContent = getTempLabel(tempF);
 
-        // Wind card
-        document.getElementById('card-wind-val').textContent = Math.round(r.windSpeedMph);
-        document.getElementById('card-wind-dir').textContent = OceanWeather.degreesToCompass(r.windDirDeg);
-        document.querySelector('#card-wind .card-pill').style.background = windColor;
+        // Wind card — dial
+        document.getElementById('wind-dial-speed').textContent = Math.round(r.windSpeedMph);
+        document.getElementById('card-wind-dir').textContent = degreesToFullWord(r.windDirDeg);
+        var arrow = document.getElementById('wind-dial-arrow');
+        if (arrow) arrow.style.transform = 'rotate(' + Math.round(r.windDirDeg) + 'deg)';
 
         // Swell card
         document.getElementById('card-swell-val').textContent = heightFt.toFixed(1);
